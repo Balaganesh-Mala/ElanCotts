@@ -8,21 +8,29 @@ const CategorySection = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadCategories = async () => {
-      try {
-        const res = await api.get("/categories");
-        if (res.data?.success) {
-          setCategories(res.data.categories || []);
-        }
-      } catch (err) {
-        console.error("Category fetch error", err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const loadCategories = async () => {
+    try {
+      const res = await api.get("/categories");
+      if (res.data?.success) {
+        const all = res.data.categories || [];
 
-    loadCategories();
-  }, []);
+        // ✅ ONLY PARENT CATEGORIES
+        const parents = all.filter(
+          (cat) => cat.parent === null || cat.level === 1
+        );
+
+        setCategories(parents);
+      }
+    } catch (err) {
+      console.error("Category fetch error", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadCategories();
+}, []);
+
 
   /* ================= LOADING ================= */
   if (loading) {

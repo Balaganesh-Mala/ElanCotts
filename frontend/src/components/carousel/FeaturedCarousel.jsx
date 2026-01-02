@@ -16,7 +16,7 @@ const FeaturedCarousel = () => {
   const loadFeaturedProducts = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/products");
+      const res = await api.get("/products/all");
 
       if (Array.isArray(res.data.products)) {
         const featured = res.data.products.filter(

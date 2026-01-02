@@ -37,7 +37,7 @@ const Sidebar = ({ open, setOpen }) => {
       try {
         const res = await api.get("/settings");
         setSettings(res.data.settings || null);
-        console.log(res.data.settings)
+        
       } catch (err) {
         Swal.fire("Error", "Failed to load store settings ❗", "error");
       }

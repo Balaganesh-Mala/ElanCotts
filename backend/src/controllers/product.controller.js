@@ -2,9 +2,7 @@ import Product from "../models/product.model.js";
 import Category from "../models/category.model.js";
 import Order from "../models/order.model.js";
 import slugify from "slugify";
-import {
-  uploadMultipleToCloudinary,
-} from "../middleware/upload.middleware.js";
+import { uploadMultipleToCloudinary } from "../middleware/upload.middleware.js";
 
 export const createProduct = async (req, res) => {
   try {
@@ -188,10 +186,7 @@ export const getProductsByCategory = async (req, res) => {
       isActive: true,
     }).select("_id");
 
-    const categoryIds = [
-      category._id,
-      ...childCategories.map((c) => c._id),
-    ];
+    const categoryIds = [category._id, ...childCategories.map((c) => c._id)];
 
     /* ================= QUERY PRODUCTS ================= */
     const products = await Product.find({
@@ -231,7 +226,6 @@ export const getProductBySlug = async (req, res) => {
 
   res.json({ success: true, product });
 };
-
 
 /* ================= ADD PRODUCT REVIEW ================= */
 export const addProductReview = async (req, res) => {
@@ -358,6 +352,23 @@ export const getAllProductsPublic = async (req, res) => {
   }
 };
 
+export const getProductByIdAdmin = async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id)
+      .populate("category", "name")
+      .populate("subCategory", "name");
+
+    if (!product) {
+      return res.status(404).json({ success: false });
+    }
+
+    res.json({ success: true, product });
+  } catch (err) {
+    res.status(500).json({ success: false });
+  }
+};
+
+
 /* ================= UPDATE PRODUCT ================= */
 export const updateProduct = async (req, res) => {
   try {
@@ -373,7 +384,14 @@ export const updateProduct = async (req, res) => {
     }
 
     /* ================= CATEGORY VALIDATION ================= */
-    if (productData.category) {
+    const isOnlyToggle =
+      productData.isActive !== undefined ||
+      productData.isFeatured !== undefined ||
+      productData.isBestSeller !== undefined ||
+      productData.isNewArrival !== undefined;
+
+    /* ================= CATEGORY VALIDATION ================= */
+    if (productData.category && !isOnlyToggle) {
       const mainCategory = await Category.findById(productData.category);
       if (!mainCategory || !mainCategory.isActive) {
         return res.status(400).json({
@@ -437,7 +455,32 @@ export const updateProduct = async (req, res) => {
       product.variants = updatedVariants;
     }
 
-    Object.assign(product, productData);
+    /* ================= SAFE FIELD UPDATE ================= */
+    const allowedFields = [
+      "name",
+      "brand",
+      "company",
+      "category",
+      "subCategory",
+      "gender",
+      "shortDescription",
+      "longDescription",
+      "attributes",
+      "variants",
+      "isFeatured",
+      "isBestSeller",
+      "isNewArrival",
+      "isActive",
+      "returnPolicy",
+      "shipping",
+      "seo",
+    ];
+
+    allowedFields.forEach((field) => {
+      if (productData[field] !== undefined) {
+        product[field] = productData[field];
+      }
+    });
 
     await product.save();
 
@@ -454,7 +497,6 @@ export const updateProduct = async (req, res) => {
     });
   }
 };
-
 
 /* ================= SOFT DELETE PRODUCT ================= */
 export const deleteProduct = async (req, res) => {

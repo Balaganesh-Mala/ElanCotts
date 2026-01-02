@@ -135,6 +135,7 @@ const ProductDetails = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* ================= IMAGES ================= */}
+        <div className="lg:sticky lg:top-24 self-start">
         <div className="flex flex-col lg:flex-row gap-4">
           {/* THUMBNAILS */}
           <div
@@ -189,6 +190,7 @@ const ProductDetails = () => {
               style={zoomStyle}
             />
           </div>
+        </div>
         </div>
 
         {/* ================= INFO ================= */}

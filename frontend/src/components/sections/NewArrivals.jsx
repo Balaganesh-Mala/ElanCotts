@@ -14,7 +14,7 @@ const NewArrivals = () => {
   const loadNewArrivals = async () => {
     try {
       setLoading(true);
-      const res = await api.get("/products");
+      const res = await api.get("/products/all");
 
       if (Array.isArray(res.data.products)) {
         const latest = res.data.products

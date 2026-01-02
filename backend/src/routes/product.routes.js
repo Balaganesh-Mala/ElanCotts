@@ -9,6 +9,7 @@ import {
   deleteProduct,
   hardDeleteProduct,
   getAllProductsPublic,
+  getProductByIdAdmin, // 👈 ADD
 } from "../controllers/product.controller.js";
 
 import { upload } from "../middleware/upload.middleware.js";
@@ -18,12 +19,12 @@ import { isAdmin } from "../middleware/admin.middleware.js";
 const router = express.Router();
 
 /* ===== PUBLIC ===== */
-router.get("/all", getAllProductsPublic);              // ✅ MOVE UP
-router.get("/category/:slug", getProductsByCategory); // ✅
-router.get("/:slug", getProductBySlug);                // LAST
+router.get("/all", getAllProductsPublic);
+router.get("/category/:slug", getProductsByCategory);
 
-/* ===== ADMIN ===== */
-router.get("/",  getAllProductsAdmin);
+/* ===== ADMIN (MUST BE BEFORE :slug) ===== */
+router.get("/admin/:id", protect, isAdmin, getProductByIdAdmin);
+router.get("/", protect, isAdmin, getAllProductsAdmin);
 
 router.post(
   "/",
@@ -53,6 +54,9 @@ router.put(
 
 router.delete("/:id", protect, isAdmin, deleteProduct);
 router.delete("/:id/hard", protect, isAdmin, hardDeleteProduct);
+
+/* ===== PUBLIC SINGLE PRODUCT ===== */
+router.get("/:slug", getProductBySlug);
 
 /* ===== REVIEWS ===== */
 router.post("/:id/reviews", protect, addProductReview);

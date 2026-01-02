@@ -16,7 +16,7 @@ const BestSeller = () => {
       setLoading(true);
 
       // ✅ PUBLIC products endpoint
-      const res = await api.get("/products");
+      const res = await api.get("/products/all");
 
       const allProducts = res.data.products || [];
 
