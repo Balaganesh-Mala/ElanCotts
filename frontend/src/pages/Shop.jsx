@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
-import { Loader2 } from "lucide-react";
 
+import { FiChevronRight } from "react-icons/fi";
 import ProductCard from "../components/ui/ProductCard";
 import ProductGridSkeleton from "../components/ui/ProductGridSkeleton";
 import api from "../api/axios.js";
@@ -9,10 +9,15 @@ import api from "../api/axios.js";
 const Shop = () => {
   /* ================= STATES ================= */
   const [categories, setCategories] = useState([]);
-  const [activeCategory, setActiveCategory] = useState(null);
+  const [activeCategory, setActiveCategory] = useState({
+    parent: null,
+    child: null,
+  });
 
   const [products, setProducts] = useState([]);
+  const [openParent, setOpenParent] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [priceRange, setPriceRange] = useState([0, 5000]);
 
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("");
@@ -51,146 +56,396 @@ const Shop = () => {
   }, []);
 
   /* ================= LOAD PRODUCTS BY CATEGORY ================= */
-  const loadProductsByCategory = async (slug) => {
+  const loadProductsByParent = async (slug) => {
     try {
       setLoading(true);
       setProducts([]);
 
-      if (!slug) {
-        setLoading(false);
-        return;
-      }
-
       const res = await api.get(`/products/category/${slug}`);
       setProducts(res.data.products || []);
-    } catch (err) {
-      console.error("Products fetch error:", err);
+    } catch {
       Swal.fire("Error", "Failed to load products", "error");
     } finally {
       setLoading(false);
     }
   };
 
+  const loadProductsByChild = async (slug) => {
+    try {
+      setLoading(true);
+      setProducts([]);
+
+      const res = await api.get(`/products/category/${slug}`);
+      setProducts(res.data.products || []);
+    } catch {
+      Swal.fire("Error", "Failed to load products", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getMinPrice = (product) => {
+    let prices = [];
+
+    product.variants.forEach((variant) => {
+      variant.sizes.forEach((size) => {
+        if (typeof size.price === "number") {
+          prices.push(size.price);
+        }
+      });
+    });
+
+    return prices.length ? Math.min(...prices) : 0;
+  };
+
   /* ================= FILTER + SORT ================= */
   const filteredProducts = useMemo(() => {
     let list = [...products];
 
+    /* SEARCH */
     if (search) {
       list = list.filter((p) =>
         p.name.toLowerCase().includes(search.toLowerCase())
       );
     }
 
+    /* PRICE RANGE */
+    list = list.filter((p) => {
+      const price = getMinPrice(p);
+      return price >= priceRange[0] && price <= priceRange[1];
+    });
+
+    /* SORT */
     if (sort === "low-high") {
-      list.sort(
-        (a, b) =>
-          Math.min(...a.variants.map((v) => v.price)) -
-          Math.min(...b.variants.map((v) => v.price))
-      );
+      list.sort((a, b) => getMinPrice(a) - getMinPrice(b));
     }
 
     if (sort === "high-low") {
-      list.sort(
-        (a, b) =>
-          Math.min(...b.variants.map((v) => v.price)) -
-          Math.min(...a.variants.map((v) => v.price))
-      );
+      list.sort((a, b) => getMinPrice(b) - getMinPrice(a));
     }
 
     return list;
-  }, [products, search, sort]);
+  }, [products, search, sort, priceRange]);
 
   /* ================= UI ================= */
   return (
     <section className="bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 grid grid-cols-1 lg:grid-cols-[280px,1fr] gap-8">
         {/* ================= SIDEBAR ================= */}
-        <aside className="hidden lg:block bg-white border rounded-2xl p-6 h-fit sticky top-24 shadow-sm">
-          {/* HEADER */}
-          <h3 className="text-sm font-semibold mb-4 text-gray-900">
-            Categories
-          </h3>
+        {/* DESKTOP FILTER SIDEBAR */}
+        <aside
+          className="hidden lg:block sticky top-24 h-fit
+  rounded-3xl border border-slate-200
+  bg-white shadow-xl overflow-hidden"
+        >
+          {/* GRADIENT HEADER */}
+          <div
+            className="px-6 py-4
+    bg-gray-100
+    text-black"
+          >
+            <h3 className="text-sm font-semibold">Filters</h3>
+            <p className="text-xs text-black-900">Refine products quickly</p>
+          </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="p-6 space-y-7">
             {/* ALL CATEGORIES */}
             <button
               onClick={() => {
-                setActiveCategory(null);
+                setActiveCategory({ parent: null, child: null });
                 loadAllProducts();
               }}
-              className={`px-4 py-2 rounded-xl text-sm font-medium text-left transition
+              className={`w-full px-4 py-2.5 rounded-xl text-sm font-semibold transition
         ${
-          !activeCategory
-            ? "bg-indigo-600 text-white shadow-sm"
-            : "text-gray-700 hover:bg-indigo-50"
+          !activeCategory.parent && !activeCategory.child
+            ? "bg-indigo-600 text-white shadow-md"
+            : "bg-indigo-50 text-indigo-700 hover:bg-indigo-100"
         }`}
             >
               All Categories
             </button>
 
-            {/* CATEGORY TREE */}
-            {categories.map((parent) => (
-              <div key={parent._id}>
-                {/* PARENT CATEGORY */}
-                <button
-                  onClick={() => {
-                    setActiveCategory(parent.slug);
-                    loadProductsByCategory(parent.slug);
-                  }}
-                  className={`w-full text-left px-4 py-2 rounded-xl text-sm font-medium transition
-            ${
-              activeCategory === parent.slug
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-gray-700 hover:bg-indigo-50"
-            }`}
-                >
-                  {parent.name}
-                </button>
+            {/* CATEGORY SECTION */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                Categories
+              </h4>
 
-                {/* CHILD CATEGORIES */}
-                {parent.children?.length > 0 && (
-                  <div className="ml-4 mt-1 flex flex-col gap-1">
-                    {parent.children.map((child) => (
-                      <button
-                        key={child._id}
-                        onClick={() => {
-                          setActiveCategory(child.slug);
-                          loadProductsByCategory(child.slug);
-                        }}
-                        className={`px-4 py-1.5 rounded-lg text-xs text-left transition
-                  ${
-                    activeCategory === child.slug
-                      ? "bg-indigo-100 text-indigo-700 font-semibold"
-                      : "text-gray-600 hover:bg-indigo-50"
-                  }`}
-                      >
-                        {child.name}
-                      </button>
-                    ))}
+              {categories.map((parent) => {
+                const isOpen = openParent === parent.slug;
+
+                return (
+                  <div
+                    key={parent._id}
+                    className="rounded-2xl border border-slate-100 bg-slate-50 overflow-hidden"
+                  >
+                    {/* PARENT */}
+                    <button
+                      onClick={() => {
+                        setActiveCategory({ parent: parent.slug, child: null });
+                        loadProductsByParent(parent.slug);
+
+                        setOpenParent(isOpen ? null : parent.slug);
+                      }}
+                      className={`w-full flex justify-between items-center
+          px-4 py-3 text-sm font-medium transition
+          ${
+            activeCategory.parent === parent.slug && !activeCategory.child
+              ? "bg-indigo-500 text-white"
+              : "text-slate-700 hover:bg-indigo-100"
+          }`}
+                    >
+                      <span>{parent.name}</span>
+
+                      {/* ARROW */}
+                      <FiChevronRight
+                        className={`text-lg transition-transform duration-200
+            ${isOpen ? "rotate-90" : "rotate-0"}`}
+                      />
+                    </button>
+
+                    {/* CHILDREN */}
+                    {parent.children?.length > 0 && isOpen && (
+                      <div className="px-4 py-3 space-y-1 bg-white">
+                        {parent.children.map((child) => (
+                          <button
+                            key={child._id}
+                            onClick={() => {
+                              setActiveCategory({
+                                parent: parent.slug,
+                                child: child.slug,
+                              });
+                              loadProductsByChild(child.slug);
+                            }}
+                            className={`w-full px-3 py-2 rounded-lg text-xs text-left transition
+                ${
+                  activeCategory.child === child.slug
+                    ? "bg-indigo-100 text-indigo-700 font-semibold"
+                    : "text-slate-600 hover:bg-indigo-50"
+                }`}
+                          >
+                            {child.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                )}
+                );
+              })}
+            </div>
+
+            {/* SORT */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                Sort By
+              </h4>
+
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="w-full px-4 py-2.5 rounded-xl text-sm
+          bg-slate-50 border border-slate-200
+          focus:ring-2 focus:ring-indigo-500 outline-none"
+              >
+                <option value="">Recommended</option>
+                <option value="low-high">Price: Low → High</option>
+                <option value="high-low">Price: High → Low</option>
+              </select>
+            </div>
+
+            {/* PRICE */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                Price Range
+              </h4>
+
+              <input
+                type="range"
+                min={0}
+                max={5000}
+                step={100}
+                value={priceRange[1]}
+                onChange={(e) => setPriceRange([0, Number(e.target.value)])}
+                className="w-full accent-indigo-600"
+              />
+
+              <div className="flex justify-between text-xs text-slate-500">
+                <span>₹0</span>
+                <span className="font-medium text-slate-700">
+                  ₹{priceRange[1]}
+                </span>
               </div>
-            ))}
+            </div>
           </div>
+        </aside>
 
-          {/* SORT */}
-          <div className="mt-6">
-            <h4 className="text-xs font-semibold mb-2 text-gray-700">
-              Sort By
-            </h4>
+        {/* MOBILE FILTER + SORT BAR */}
+        <div className="lg:hidden flex items-center justify-between gap-3 mb-4">
+          {/* FILTER BUTTON */}
+          <button
+            onClick={() => setFilterOpen(true)}
+            className="flex items-center justify-center gap-2
+      px-5 py-2.5 rounded-xl text-sm font-semibold
+      bg-gradient-to-r from-indigo-600 to-blue-600
+      text-white shadow-md active:scale-95 transition"
+          >
+            Filters
+            <span className="text-xs opacity-90">☰</span>
+          </button>
 
+          {/* SORT DROPDOWN */}
+          <div className="relative">
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
-              className="w-full border bg-gray-50 px-4 py-2 rounded-xl text-sm outline-none
-                 focus:ring-2 focus:ring-indigo-500 transition"
+              className="appearance-none px-4 py-2.5 pr-9
+        rounded-xl text-sm font-medium
+        border border-slate-200 bg-white
+        shadow-sm focus:ring-2 focus:ring-indigo-500 outline-none"
             >
               <option value="">Recommended</option>
-              <option value="low-high">Price: Low to High</option>
-              <option value="high-low">Price: High to Low</option>
+              <option value="low-high">Price: Low → High</option>
+              <option value="high-low">Price: High → Low</option>
             </select>
+
+            {/* DROPDOWN ICON */}
+            <span
+              className="absolute right-3 top-1/2 -translate-y-1/2
+      text-slate-400 pointer-events-none"
+            >
+              ▼
+            </span>
           </div>
-        </aside>
+        </div>
+
+        {/* MOBILE FILTER DRAWER */}
+        {filterOpen && (
+          <div className="fixed inset-0 z-50 bg-black/40 flex justify-center items-end">
+            <div className="w-full bg-white rounded-t-3xl p-6 max-h-[85vh] overflow-y-auto">
+              {/* HEADER */}
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-lg font-semibold text-slate-800">
+                  Filters
+                </h3>
+                <button
+                  onClick={() => setFilterOpen(false)}
+                  className="text-sm font-semibold text-indigo-600"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* ALL CATEGORIES */}
+              <button
+                onClick={() => {
+                  setActiveCategory({ parent: null, child: null });
+                  loadAllProducts();
+                  setOpenParent(null);
+                  setFilterOpen(false);
+                }}
+                className={`w-full mb-3 px-4 py-2.5 rounded-xl text-sm font-semibold
+          ${
+            !activeCategory.parent && !activeCategory.child
+              ? "bg-indigo-600 text-white"
+              : "bg-indigo-50 text-indigo-700"
+          }`}
+              >
+                All Categories
+              </button>
+
+              {/* CATEGORY LIST */}
+              <div className="space-y-3">
+                {categories.map((parent) => {
+                  const isOpen = openParent === parent.slug;
+
+                  return (
+                    <div
+                      key={parent._id}
+                      className="rounded-2xl border border-slate-200 overflow-hidden"
+                    >
+                      {/* PARENT */}
+                      <button
+                        onClick={() =>
+                          setOpenParent(isOpen ? null : parent.slug)
+                        }
+                        className="w-full flex justify-between items-center
+                  px-4 py-3 text-sm font-medium text-slate-800
+                  bg-slate-50"
+                      >
+                        <span>{parent.name}</span>
+                        <span
+                          className={`transition-transform duration-200
+                    ${isOpen ? "rotate-180" : ""}`}
+                        >
+                          ▼
+                        </span>
+                      </button>
+
+                      {/* CHILDREN */}
+                      {parent.children?.length > 0 && isOpen && (
+                        <div className="px-4 py-3 space-y-2 bg-white">
+                          {parent.children.map((child) => (
+                            <button
+                              key={child._id}
+                              onClick={() => {
+                                setActiveCategory({
+                                  parent: parent.slug,
+                                  child: child.slug,
+                                });
+                                loadProductsByChild(child.slug);
+                                setFilterOpen(false);
+                              }}
+                              className={`w-full px-4 py-2 rounded-lg text-sm text-left
+                        ${
+                          activeCategory.child === child.slug
+                            ? "bg-indigo-100 text-indigo-700 font-semibold"
+                            : "bg-slate-50 text-slate-700"
+                        }`}
+                            >
+                              {child.name}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* PRICE RANGE */}
+              <div className="mt-8">
+                <h4 className="text-sm font-semibold mb-2 text-slate-800">
+                  Price Range
+                </h4>
+
+                <input
+                  type="range"
+                  min={0}
+                  max={5000}
+                  step={100}
+                  value={priceRange[1]}
+                  onChange={(e) => setPriceRange([0, Number(e.target.value)])}
+                  className="w-full accent-indigo-600"
+                />
+
+                <div className="flex justify-between text-xs text-slate-600 mt-1">
+                  <span>₹0</span>
+                  <span>₹{priceRange[1]}</span>
+                </div>
+              </div>
+
+              {/* APPLY BUTTON */}
+              <button
+                onClick={() => setFilterOpen(false)}
+                className="w-full mt-6 px-4 py-3 rounded-xl
+          bg-gradient-to-r from-indigo-600 to-blue-600
+          text-white font-semibold shadow"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* ================= MAIN ================= */}
         <div>

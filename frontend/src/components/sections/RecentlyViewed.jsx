@@ -1,63 +1,81 @@
-import React, { useState, useEffect } from "react";
-
-import ProductCard from "../ui/ProductCard";
-import ProductCardSkeleton from "../ui/ProductCardSkeleton";
-import api from "../../api/axios.js";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
+import { useNavigate } from "react-router-dom";
 
 const RecentlyViewed = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { recentlyViewed } = useRecentlyViewed();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    const loadRecentlyViewed = async () => {
-      try {
-        const res = await api.get("/products/all");
-        const allProducts = res.data.products || [];
-
-        const viewed =
-          JSON.parse(localStorage.getItem("recentlyViewed")) || [];
-
-        const list = viewed
-          .map((id) => allProducts.find((p) => p._id === id))
-          .filter(Boolean)
-          .slice(0, 5);
-
-        setProducts(list);
-      } catch (err) {
-        console.error("Recently viewed fetch:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadRecentlyViewed();
-  }, []);
-
-  if (!loading && !products.length) return null;
+  if (!recentlyViewed || recentlyViewed.length === 0) return null;
 
   return (
-    <section className="bg-indigo-50/40 py-20">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
-        {/* 🔹 Header */}
-        <div className="mb-10 max-w-xl">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 tracking-tight">
-            Recently Viewed
-          </h2>
-          <p className="text-gray-600 text-sm mt-2 leading-relaxed">
-            Continue exploring styles you checked out earlier.
-          </p>
-        </div>
+    <section className="max-w-7xl mx-auto px-4 py-10">
+      {/* HEADER */}
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="text-lg font-semibold text-slate-900">
+          Recently Viewed
+        </h2>
+        <span className="text-xs text-slate-500">
+          Based on your browsing
+        </span>
+      </div>
 
-        {/* 🔹 Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-x-6 gap-y-10">
-          {loading
-            ? Array.from({ length: 5 }).map((_, i) => (
-                <ProductCardSkeleton key={i} />
-              ))
-            : products.map((p) => (
-                <ProductCard key={p._id} product={p} />
-              ))}
-        </div>
+      {/* PRODUCTS */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {recentlyViewed.map((p) => {
+          const firstVariant = p.variants?.[0];
+          const image = firstVariant?.images?.[0]?.url;
+          const colorsCount = p.variants?.length || 0;
+
+          return (
+            <button
+              key={p._id}
+              onClick={() => navigate(`/product/${p.slug}`)}
+              className="group text-left"
+            >
+              {/* IMAGE */}
+              <div
+                className="relative rounded-2xl border border-slate-200
+                bg-slate-50 overflow-hidden aspect-[3/4]"
+              >
+                {image ? (
+                  <img
+                    src={image}
+                    alt={p.name}
+                    className="w-full h-full object-cover
+                    transition-transform duration-300
+                    group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-slate-400">
+                    No Image
+                  </div>
+                )}
+              </div>
+
+              {/* INFO */}
+              <div className="mt-3 space-y-1">
+                {/* NAME */}
+                <p className="text-sm font-medium text-slate-900 line-clamp-1">
+                  {p.name}
+                </p>
+
+                {/* SHORT DESCRIPTION */}
+                {p.shortDescription && (
+                  <p className="text-xs text-slate-500 line-clamp-2">
+                    {p.shortDescription}
+                  </p>
+                )}
+
+                {/* COLORS */}
+                {colorsCount > 0 && (
+                  <p className="text-xs text-slate-600">
+                    {colorsCount} color{colorsCount > 1 ? "s" : ""} available
+                  </p>
+                )}
+              </div>
+            </button>
+          );
+        })}
       </div>
     </section>
   );

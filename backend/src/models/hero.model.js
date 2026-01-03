@@ -1,18 +1,36 @@
 import mongoose from "mongoose";
 
-const heroImageSchema = new mongoose.Schema({
-  public_id: String,
-  url: String,
-}, { _id: false });
+const heroImageSchema = new mongoose.Schema(
+  {
+    public_id: String,
+    url: String,
+  },
+  { _id: false }
+);
 
 const heroSchema = new mongoose.Schema(
   {
     title: { type: String, required: true, trim: true },
     subtitle: { type: String, required: true },
     buttonText: { type: String, required: true },
-    image: heroImageSchema,  // Cloudinary banner URL
+
+    // 🔥 CTA LINK
+    linkType: {
+      type: String,
+      enum: ["INTERNAL", "EXTERNAL", "ANCHOR"],
+      default: "INTERNAL",
+    },
+    link: {
+      type: String,
+      default: "",
+    },
+
+    image: heroImageSchema,
+
     isActive: { type: Boolean, default: true },
-    order: { type: Number, default: 0 }, // for slide sequence
+
+    // 🔥 ORDER IS IMPORTANT (banner priority)
+    order: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

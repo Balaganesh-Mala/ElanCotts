@@ -163,11 +163,12 @@ export const createProduct = async (req, res) => {
 };
 
 /* ================= GET PRODUCTS BY CATEGORY ================= */
+/* ================= GET PRODUCTS BY CATEGORY (SMART) ================= */
 export const getProductsByCategory = async (req, res) => {
   try {
     const { slug } = req.params;
 
-    /* ================= FIND CATEGORY ================= */
+    // 1️⃣ Find category by slug
     const category = await Category.findOne({
       slug,
       isActive: true,
@@ -180,20 +181,34 @@ export const getProductsByCategory = async (req, res) => {
       });
     }
 
-    /* ================= FIND CHILD CATEGORIES ================= */
-    const childCategories = await Category.find({
-      parent: category._id,
+    let productsQuery = {
       isActive: true,
-    }).select("_id");
+    };
 
-    const categoryIds = [category._id, ...childCategories.map((c) => c._id)];
+    // 2️⃣ IF PARENT CATEGORY
+    if (!category.parent) {
+      // find child categories
+      const childCategories = await Category.find({
+        parent: category._id,
+        isActive: true,
+      }).select("_id");
 
-    /* ================= QUERY PRODUCTS ================= */
-    const products = await Product.find({
-      category: { $in: categoryIds },
-      isActive: true,
-    })
+      const childIds = childCategories.map((c) => c._id);
+
+      productsQuery.$or = [
+        { category: category._id },
+        { subCategory: { $in: childIds } },
+      ];
+    }
+    // 3️⃣ IF CHILD CATEGORY
+    else {
+      productsQuery.subCategory = category._id;
+    }
+
+    // 4️⃣ Fetch products
+    const products = await Product.find(productsQuery)
       .populate("category", "name slug")
+      .populate("subCategory", "name slug")
       .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -213,6 +228,7 @@ export const getProductsByCategory = async (req, res) => {
     });
   }
 };
+
 
 /* ================= GET SINGLE PRODUCT BY SLUG ================= */
 export const getProductBySlug = async (req, res) => {

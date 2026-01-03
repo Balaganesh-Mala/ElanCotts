@@ -8,23 +8,28 @@ import {
   hardDeleteCategory,
   getCategoryTree,
 } from "../controllers/category.controller.js";
-import { upload } from "../middleware/upload.middleware.js";
 
+import { upload } from "../middleware/upload.middleware.js";
 import { protect } from "../middleware/auth.middleware.js";
 import { isAdmin } from "../middleware/admin.middleware.js";
 
 const router = express.Router();
 
 /* =====================================================
-   PUBLIC ROUTES (No Auth Required)
-   Used by frontend (menus, filters, listings)
+   PUBLIC ROUTES
 ===================================================== */
+
+// ✅ used by shop filters, navbar, etc.
 router.get("/", getAllCategories);
+
+// ✅ category tree (parent + children)
+router.get("/tree/all", getCategoryTree);
+
+// ✅ single category by id (admin / details)
 router.get("/:id", getCategoryById);
 
 /* =====================================================
-   ADMIN ROUTES (Protected)
-   Used by Admin Dashboard
+   ADMIN ROUTES
 ===================================================== */
 
 router.post(
@@ -45,10 +50,5 @@ router.put(
 
 router.delete("/:id", protect, isAdmin, deleteCategory);
 router.delete("/:id/hard", protect, isAdmin, hardDeleteCategory);
-
-/* ================= CATEGORY TREE ================= */
-router.get("/tree/all", getCategoryTree);
-router.get("/:id", getCategoryById);
-
 
 export default router;

@@ -4,6 +4,7 @@ import Swal from "sweetalert2";
 import { Loader2 } from "lucide-react";
 import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
+import { useRecentlyViewed } from "../context/RecentlyViewedContext";
 
 
 import api from "../api/axios";
@@ -12,7 +13,9 @@ import { useCart } from "../context/CartContext";
 const ProductDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addToCartBackend, addToLocalCart } = useCart();
+  const { addToCartBackend } = useCart();
+  const { addRecentlyViewed } = useRecentlyViewed();
+
 
   /* ================= STATE ================= */
   const [product, setProduct] = useState(null);
@@ -26,32 +29,36 @@ const ProductDetails = () => {
 
   /* ================= LOAD PRODUCT ================= */
   useEffect(() => {
-    const loadProduct = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get(`/products/${slug}`);
-        const p = res.data.product;
+  const loadProduct = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/products/${slug}`);
+      const p = res.data.product;
 
-        if (!p || !p.variants?.length) {
-          throw new Error("Invalid product");
-        }
-
-        setProduct(p);
-
-        const firstVariant = p.variants[0];
-        setActiveColor(firstVariant);
-        setSelectedImg(firstVariant.images?.[0]?.url || null);
-        setActiveSize(firstVariant.sizes?.[0] || null);
-      } catch {
-        Swal.fire("Error", "Product not found", "error");
-        navigate("/shop");
-      } finally {
-        setLoading(false);
+      if (!p || !p.variants?.length) {
+        throw new Error("Invalid product");
       }
-    };
 
-    loadProduct();
-  }, [slug, navigate]);
+      setProduct(p);
+
+      // ✅ ADD HERE
+      addRecentlyViewed(p);
+
+      const firstVariant = p.variants[0];
+      setActiveColor(firstVariant);
+      setSelectedImg(firstVariant.images?.[0]?.url || null);
+      setActiveSize(firstVariant.sizes?.[0] || null);
+    } catch {
+      Swal.fire("Error", "Product not found", "error");
+      navigate("/shop");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadProduct();
+}, [slug]);
+
 
   useEffect(() => {
     setQty(1);

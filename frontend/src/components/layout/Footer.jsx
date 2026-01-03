@@ -12,6 +12,7 @@ import api from "../../api/axios";
 const Footer = () => {
   const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [openSection, setOpenSection] = useState(null); // "links" | "support"
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -24,7 +25,6 @@ const Footer = () => {
         setLoading(false);
       }
     };
-
     loadSettings();
   }, []);
 
@@ -33,6 +33,7 @@ const Footer = () => {
       <div className="max-w-7xl mx-auto px-6 py-14">
         {/* ================= GRID ================= */}
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-10">
+
           {/* ================= BRAND ================= */}
           <div>
             {loading ? (
@@ -52,7 +53,7 @@ const Footer = () => {
               </div>
             )}
 
-            <p className="text-sm text-gray-600 leading-relaxed max-w-sm">
+            <p className="text-sm text-gray-600 leading-relaxed">
               Premium clothing crafted with quality fabrics, modern fits,
               and timeless design — made for everyday confidence and comfort.
             </p>
@@ -60,39 +61,51 @@ const Footer = () => {
 
           {/* ================= QUICK LINKS ================= */}
           <div>
-            <h4 className="font-semibold text-gray-900 mb-4">
+            <button
+              onClick={() =>
+                setOpenSection(openSection === "links" ? null : "links")
+              }
+              className="w-full flex justify-between items-center
+                font-semibold text-gray-900 mb-4
+                md:cursor-default md:pointer-events-none"
+            >
               Quick Links
-            </h4>
-            <ul className="space-y-2 text-sm text-gray-600">
-              <li>
-                <Link to="/" className="hover:text-indigo-600 transition">
-                  Home
-                </Link>
-              </li>
-              <li>
-                <Link to="/shop" className="hover:text-indigo-600 transition">
-                  Shop
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="hover:text-indigo-600 transition">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <Link to="/contact" className="hover:text-indigo-600 transition">
-                  Contact Us
-                </Link>
-              </li>
+              <span className="md:hidden text-lg">
+                {openSection === "links" ? "−" : "+"}
+              </span>
+            </button>
+
+            <ul
+              className={`space-y-2 text-sm text-gray-600
+                ${openSection === "links" ? "block" : "hidden"} md:block`}
+            >
+              <li><Link to="/" className="hover:text-indigo-600">Home</Link></li>
+              <li><Link to="/shop" className="hover:text-indigo-600">Shop</Link></li>
+              <li><Link to="/about" className="hover:text-indigo-600">About Us</Link></li>
+              <li><Link to="/contact" className="hover:text-indigo-600">Contact Us</Link></li>
             </ul>
           </div>
 
-          {/* ================= SUPPORT ================= */}
+          {/* ================= CUSTOMER SUPPORT ================= */}
           <div>
-            <h4 className="font-semibold text-gray-900 mb-4">
+            <button
+              onClick={() =>
+                setOpenSection(openSection === "support" ? null : "support")
+              }
+              className="w-full flex justify-between items-center
+                font-semibold text-gray-900 mb-4
+                md:cursor-default md:pointer-events-none"
+            >
               Customer Support
-            </h4>
-            <ul className="space-y-2 text-sm text-gray-600">
+              <span className="md:hidden text-lg">
+                {openSection === "support" ? "−" : "+"}
+              </span>
+            </button>
+
+            <ul
+              className={`space-y-2 text-sm text-gray-600
+                ${openSection === "support" ? "block" : "hidden"} md:block`}
+            >
               <li>Privacy Policy</li>
               <li>Terms & Conditions</li>
               <li>Returns & Refunds</li>
@@ -106,6 +119,7 @@ const Footer = () => {
             <h4 className="font-semibold text-gray-900 mb-4">
               Follow Us
             </h4>
+
             <p className="text-sm text-gray-600 mb-4">
               Stay updated with our latest collections and exclusive offers.
             </p>
@@ -125,13 +139,14 @@ const Footer = () => {
               </a>
             </div>
           </div>
+
         </div>
       </div>
 
       {/* ================= BOTTOM BAR ================= */}
       <div className="text-center text-xs text-gray-500 border-t py-4 bg-gray-100">
-        © {new Date().getFullYear()}{" "}
-        {settings?.companyName || "ElanCotts"}. All Rights Reserved.
+        © {new Date().getFullYear()} {settings?.companyName || "ElanCotts"}.
+        All Rights Reserved.
       </div>
     </footer>
   );

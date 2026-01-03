@@ -1,11 +1,20 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { FaShoppingBag, FaUserCircle, FaTimes } from "react-icons/fa";
-import { Loader2 } from "lucide-react";
+import { ShoppingBag, User, Menu, X } from "lucide-react";
+
+import {
+  FiShoppingCart,
+  FiUser,
+  FiHome,
+  FiPackage,
+  FiShoppingBag,
+  FiInfo,
+  FiPhone,
+} from "react-icons/fi";
 import Swal from "sweetalert2";
 
 import { useCart } from "../../context/CartContext";
-import api from "../../api/axios.js";
+import api from "../../api/axios";
 
 const navLinks = [
   { name: "Home", path: "/" },
@@ -15,14 +24,20 @@ const navLinks = [
   { name: "Contact", path: "/contact" },
 ];
 
+const navIconMap = {
+  Home: FiHome,
+  Shop: FiPackage,
+  "My Orders": FiShoppingBag,
+  About: FiInfo,
+  Contact: FiPhone,
+};
 const Navbar = () => {
   const navigate = useNavigate();
-  const { cart } = useCart(); // ✅ FIXED
+  const { cartItems } = useCart(); // ✅ FIX
 
-  const cartCount =
-    cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0;
+  const cartCount = cartItems.reduce((sum, item) => sum + item.qty, 0);
 
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [logo, setLogo] = useState("");
   const [companyName, setCompanyName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -45,28 +60,20 @@ const Navbar = () => {
     loadSettings();
   }, []);
 
-  /* ================= AUTH CHECK ================= */
-  const verifyUser = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) return false;
+  /* ================= USER CHECK ================= */
+  const handleProfileClick = async () => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      Swal.fire("Login Required", "Please login to continue", "info");
+      return navigate("/login");
+    }
 
-      const res = await api.get("/auth/profile", {
+    try {
+      await api.get("/auth/profile", {
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      return !!res.data.success;
-    } catch {
-      return false;
-    }
-  };
-
-  const handleAvatarClick = async () => {
-    const valid = await verifyUser();
-    if (valid) {
       navigate("/profile");
-    } else {
-      Swal.fire("Login Required", "Please login to continue ❗", "info");
+    } catch {
       localStorage.removeItem("token");
       navigate("/login");
     }
@@ -75,15 +82,15 @@ const Navbar = () => {
   return (
     <>
       {/* OVERLAY */}
-      {mobileMenuOpen && (
+      {mobileOpen && (
         <div
-          onClick={() => setMobileMenuOpen(false)}
-          className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+          className="fixed inset-0 bg-black/40 z-40"
         />
       )}
 
       {/* NAVBAR */}
-      <nav className="sticky top-0 z-50 bg-white border-b">
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           {/* LOGO */}
           <div
@@ -91,99 +98,134 @@ const Navbar = () => {
             className="flex items-center gap-3 cursor-pointer"
           >
             {loading ? (
-              <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+              <div className="h-9 w-24 bg-gray-200 animate-pulse rounded" />
             ) : (
               <>
                 <img
                   src={logo || "/logo.jpg"}
                   alt="logo"
-                  className="h-10 object-contain"
+                  className="h-9 object-contain"
                 />
-                {companyName && (
-                  <span className="hidden sm:block text-lg font-semibold">
-                    {companyName}
-                  </span>
-                )}
+                <span className=" sm:block text-lg font-semibold tracking-wide">
+                  {companyName}
+                </span>
               </>
             )}
           </div>
 
           {/* DESKTOP NAV */}
-          <ul className="hidden lg:flex items-center gap-8 text-sm font-medium">
-            {navLinks.map((link) => (
-              <li key={link.name}>
-                <NavLink
-                  to={link.path}
-                  end
-                  className={({ isActive }) =>
-                    isActive
-                      ? "text-indigo-600 border-b-2 border-indigo-600"
-                      : "text-gray-700 hover:text-indigo-600"
-                  }
-                >
-                  {link.name}
-                </NavLink>
-              </li>
-            ))}
+          <ul className="hidden lg:flex items-center gap-3 text-sm font-medium bg-indigo-50 rounded-full px-2 py-2">
+            {navLinks.map((link) => {
+              const Icon = navIconMap[link.name];
+
+              return (
+                <li key={link.name}>
+                  <NavLink
+                    to={link.path}
+                    className={({ isActive }) =>
+                      `
+            flex items-center gap-2
+            px-4 py-2 rounded-full
+            transition-all duration-300
+            ${
+              isActive
+                ? "bg-indigo-600/10 text-indigo-600"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-800"
+            }
+          `
+                    }
+                  >
+                    {/* ICON ONLY WHEN ACTIVE */}
+                    {({ isActive }) => (
+                      <>
+                        {isActive && Icon && <Icon size={16} />}
+                        <span className="whitespace-nowrap">{link.name}</span>
+                      </>
+                    )}
+                  </NavLink>
+                </li>
+              );
+            })}
           </ul>
 
-          {/* RIGHT ICONS */}
-          <div className="flex items-center gap-5">
+          {/* RIGHT ICONS (DESKTOP ONLY) */}
+          <div className="hidden lg:flex items-center gap-5">
             {/* USER */}
-            <button onClick={handleAvatarClick}>
-              <FaUserCircle className="text-2xl text-gray-600 hover:text-indigo-600" />
+            <button
+              onClick={handleProfileClick}
+              className="p-2 rounded-full hover:bg-gray-100 transition"
+            >
+              <FiUser className="w-5 h-5 text-gray-700" />
             </button>
 
             {/* CART */}
             <button
               onClick={() => navigate("/cart")}
-              className="relative"
+              className="relative p-2 rounded-full hover:bg-gray-100 transition"
             >
-              <FaShoppingBag className="text-2xl text-gray-600 hover:text-indigo-600" />
+              <FiShoppingCart className="w-5 h-5 text-gray-700" />
               {cartCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">
+                <span className="absolute -top-1 -right-1 bg-indigo-600 text-white text-[10px] min-w-[18px] h-[18px] flex items-center justify-center rounded-full font-semibold">
                   {cartCount}
                 </span>
               )}
             </button>
-
-            {/* MOBILE MENU */}
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="text-2xl lg:hidden"
-            >
-              ☰
-            </button>
           </div>
+
+          {/* MOBILE MENU BUTTON (ONLY) */}
+          <button
+            onClick={() => setMobileOpen(true)}
+            className="lg:hidden p-2 rounded-full hover:bg-gray-100 transition"
+          >
+            <Menu className="w-7 h-7 text-gray-800" />
+          </button>
         </div>
       </nav>
 
-      {/* MOBILE MENU */}
-      <aside
-        className={`fixed top-0 right-0 h-full w-[280px] bg-white z-50 p-6 transition-transform ${
-          mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+      {/* MOBILE MENU (SHEET STYLE, NOT SIDE DRAWER) */}
+      <div
+        className={`fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl shadow-2xl transform transition-transform duration-300 ${
+          mobileOpen ? "translate-y-0" : "translate-y-full"
         }`}
       >
-        <div className="flex justify-between mb-6">
-          <h3 className="text-lg font-semibold">Menu</h3>
-          <FaTimes
-            onClick={() => setMobileMenuOpen(false)}
-            className="cursor-pointer"
+        <div className="flex items-center justify-between px-6 py-4 border-b">
+          <span className="text-lg font-semibold">Menu</span>
+          <X
+            onClick={() => setMobileOpen(false)}
+            className="w-6 h-6 cursor-pointer"
           />
         </div>
 
-        <ul className="flex flex-col gap-5 text-sm font-medium">
+        <ul className="px-6 py-6 space-y-5 text-base font-medium">
           {navLinks.map((link) => (
-            <li key={link.name} onClick={() => setMobileMenuOpen(false)}>
-              <NavLink to={link.path}>{link.name}</NavLink>
+            <li key={link.name}>
+              <NavLink
+                to={link.path}
+                onClick={() => setMobileOpen(false)}
+                className={({ isActive }) =>
+                  `block py-2 ${
+                    isActive ? "text-indigo-600 font-semibold" : "text-gray-700"
+                  }`
+                }
+              >
+                {link.name}
+              </NavLink>
             </li>
           ))}
 
-          <li onClick={() => setMobileMenuOpen(false)}>
-            <NavLink to="/cart">Cart ({cartCount})</NavLink>
+          <li>
+            <button
+              onClick={() => {
+                setMobileOpen(false);
+                handleProfileClick();
+              }}
+              className="w-full text-left py-2 text-gray-700"
+            >
+              Profile
+            </button>
           </li>
         </ul>
-      </aside>
+      </div>
     </>
   );
 };

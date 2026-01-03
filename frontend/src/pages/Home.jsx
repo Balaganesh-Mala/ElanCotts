@@ -5,6 +5,7 @@ import FeaturedCarousel from "../components/carousel/FeaturedCarousel";
 import CategorySection from "../components/sections/CategorySection";
 import BestSeller from "../components/sections/BestSeller";
 import RecentlyViewed from "../components/sections/RecentlyViewed";
+import FixedBanner from "../components/sections/FixedBanner";
 
 
 const Home = () => {
@@ -14,6 +15,7 @@ const Home = () => {
       <CategorySection/>
       <NewArrivals/>
       <BestSeller/>
+      <FixedBanner/>
       <FeaturedCarousel/>
       <RecentlyViewed/>
     </div>

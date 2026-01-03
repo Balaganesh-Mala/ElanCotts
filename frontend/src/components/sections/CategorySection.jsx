@@ -33,13 +33,42 @@ const CategorySection = () => {
 
 
   /* ================= LOADING ================= */
-  if (loading) {
-    return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+  /* ================= LOADING ================= */
+if (loading) {
+  return (
+    <section className="max-w-7xl mx-auto px-6 py-20 animate-pulse">
+      {/* HEADER SKELETON */}
+      <div className="text-center max-w-3xl mx-auto">
+        <div className="h-8 w-72 bg-slate-200 rounded mx-auto" />
+        <div className="h-4 w-96 bg-slate-200 rounded mx-auto mt-4" />
       </div>
-    );
-  }
+
+      {/* FEATURED SKELETON */}
+      <div className="mt-16 grid gap-8 grid-cols-1 md:grid-cols-3">
+        {/* HERO CARD */}
+        <div className="md:col-span-2 h-[360px] rounded-2xl bg-slate-200" />
+
+        {/* SIDE CARDS */}
+        <div className="h-[360px] rounded-2xl bg-slate-200" />
+      </div>
+
+      {/* MORE COLLECTIONS SKELETON */}
+      <div className="mt-20">
+        <div className="h-6 w-48 bg-slate-200 rounded mb-6" />
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-xl overflow-hidden bg-slate-200 h-40"
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 
   if (!categories.length) return null;
 
