@@ -6,6 +6,7 @@ import {
   removeCartItem,
   applyCouponToCart,
   clearCart,
+  mergeGuestCart,
 } from "../controllers/cart.controller.js";
 
 import { protect } from "../middleware/auth.middleware.js";
@@ -15,6 +16,7 @@ const router = express.Router();
 router.use(protect);
 
 router.post("/add", addToCart);
+router.post("/merge", mergeGuestCart);
 router.get("/", getCart);
 router.put("/update", updateCartItem);
 router.delete("/remove/:variantSku", removeCartItem);

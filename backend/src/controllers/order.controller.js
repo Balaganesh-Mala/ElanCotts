@@ -1,5 +1,6 @@
 import Order from "../models/order.model.js";
 import { buildOrderFromCart } from "../services/order.service.js";
+import { generateInvoicePDF } from "../services/invoice.service.js";
 
 /* =====================================================
    CREATE ORDER (COD ONLY)
@@ -195,6 +196,54 @@ export const deleteOrder = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to delete order",
+    });
+  }
+};
+
+
+export const downloadInvoice = async (req, res) => {
+  const order = await Order.findOne({
+    _id: req.params.id,
+    user: req.user._id,
+    orderStatus: "DELIVERED",
+  });
+
+  if (!order) {
+    return res.status(403).json({
+      success: false,
+      message: "Invoice available only after delivery",
+    });
+  }
+
+  generateInvoicePDF(order, res);
+};
+
+
+
+export const previewOrder = async (req, res) => {
+  try {
+    const { couponCode } = req.body;
+
+    const preview = await buildOrderFromCart({
+      userId: req.user._id,
+      shippingAddress: {
+        name: "PREVIEW",
+        phone: "0000000000",
+        street: "PREVIEW",
+        city: "PREVIEW",
+        state: "PREVIEW",
+        pincode: "000000",
+      },
+      paymentMethod: "COD",
+      couponCode,
+      previewOnly: true,
+    });
+
+    res.json({ success: true, preview });
+  } catch (err) {
+    res.status(400).json({
+      success: false,
+      message: err.message,
     });
   }
 };

@@ -46,80 +46,148 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <aside className="bg-white w-full max-w-[420px] sm:max-w-[460px] rounded-2xl shadow-lg p-6 sm:p-8 space-y-5">
-        <h2 className="text-2xl font-extrabold text-gray-900 text-center">
-          {loading ? "Logging In..." : "Login"}
-        </h2>
+  <div className="min-h-screen grid lg:grid-cols-2">
 
+    {/* ================= LEFT PANEL ================= */}
+    <div className="hidden lg:flex flex-col justify-center px-14
+      bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-600 text-white"
+    >
+      <h1 className="text-4xl font-extrabold leading-tight">
+        Welcome Back 👋
+      </h1>
+
+      <p className="mt-4 text-blue-100 max-w-md">
+        Log in to manage your orders, track deliveries, and access your invoices
+        securely from one place.
+      </p>
+
+      {/* FEATURE LIST */}
+      <ul className="mt-8 space-y-4 text-sm">
+        <li className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-white"></span>
+          Secure & fast checkout experience
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-white"></span>
+          Track your orders in real time
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-white"></span>
+          Download GST invoices anytime
+        </li>
+      </ul>
+
+      <p className="mt-12 text-xs text-blue-200">
+        © {new Date().getFullYear()} Your Brand. All rights reserved.
+      </p>
+    </div>
+
+    {/* ================= RIGHT PANEL ================= */}
+    <div className="flex items-center justify-center px-4">
+      <aside className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 space-y-6">
+
+        {/* TITLE */}
+        <div className="text-center space-y-1">
+          <h2 className="text-2xl font-bold text-slate-900">
+            {loading ? "Logging you in…" : "Login to your account"}
+          </h2>
+          <p className="text-sm text-slate-500">
+            Please enter your credentials
+          </p>
+        </div>
+
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* Email */}
-          <div className="relative">
-            <input
-              onChange={handleChange}
-              name="email"
-              type="email"
-              value={form.email}
-              placeholder="Enter your email"
-              className="w-full bg-gray-100 px-4 py-3 text-sm rounded-full outline-none border focus:border-black"
-              required
-            />
-            <FaEnvelope className="absolute right-4 top-3.5 text-gray-400" />
+          {/* EMAIL */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+              Email address
+            </label>
+            <div className="relative">
+              <input
+                onChange={handleChange}
+                name="email"
+                type="email"
+                value={form.email}
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 text-sm rounded-xl
+                border border-slate-200 bg-slate-50
+                focus:bg-white focus:border-indigo-600 outline-none"
+                required
+              />
+              <FaEnvelope className="absolute right-4 top-3.5 text-slate-400" />
+            </div>
           </div>
 
-          {/* Password */}
-          <div className="relative">
-            <input
-              onChange={handleChange}
-              name="password"
-              value={form.password}
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter password"
-              className="w-full bg-gray-100 px-4 py-3 text-sm rounded-full outline-none border focus:border-black"
-              required
-            />
-            {showPassword ? (
-              <FaEyeSlash
-                onClick={() => setShowPassword(false)}
-                className="absolute right-4 top-4 text-gray-400 cursor-pointer"
+          {/* PASSWORD */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                onChange={handleChange}
+                name="password"
+                value={form.password}
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 text-sm rounded-xl
+                border border-slate-200 bg-slate-50
+                focus:bg-white focus:border-indigo-600 outline-none"
+                required
               />
-            ) : (
-              <FaEye
-                onClick={() => setShowPassword(true)}
-                className="absolute right-4 top-4 text-gray-400 cursor-pointer"
-              />
-            )}
+              {showPassword ? (
+                <FaEyeSlash
+                  onClick={() => setShowPassword(false)}
+                  className="absolute right-4 top-3.5 text-slate-400 cursor-pointer"
+                />
+              ) : (
+                <FaEye
+                  onClick={() => setShowPassword(true)}
+                  className="absolute right-4 top-3.5 text-slate-400 cursor-pointer"
+                />
+              )}
+            </div>
           </div>
 
-          {/* Submit Button */}
+          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-3 rounded-full font-bold hover:bg-gray-800 transition text-sm"
+            className={`w-full flex items-center justify-center gap-2
+              py-3 rounded-xl font-semibold text-sm text-white
+              bg-gradient-to-r from-indigo-600 to-blue-600
+              hover:from-indigo-700 hover:to-blue-700
+              transition
+              ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
           >
             {loading ? (
-              <span className="flex items-center justify-center gap-2">
+              <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                Processing...
-              </span>
+                Processing…
+              </>
             ) : (
               "Login"
             )}
           </button>
-
         </form>
 
-        {/* Register Redirect */}
-        <p className="text-center text-xs text-gray-600 font-medium">
+        {/* REGISTER */}
+        <p className="text-center text-xs text-slate-600">
           Don’t have an account?{" "}
-          <Link to="/register" className="text-orange-500 font-bold hover:underline">
-            Register
+          <Link
+            to="/register"
+            className="text-indigo-600 font-semibold hover:underline"
+          >
+            Create one
           </Link>
         </p>
       </aside>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default Login;

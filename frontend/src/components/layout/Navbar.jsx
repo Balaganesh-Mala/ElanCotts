@@ -10,14 +10,17 @@ import api from "../../api/axios.js";
 const navLinks = [
   { name: "Home", path: "/" },
   { name: "Shop", path: "/shop" },
-  { name: "Orders", path: "/orders" },
+  { name: "My Orders", path: "/orders" },
   { name: "About", path: "/about" },
   { name: "Contact", path: "/contact" },
 ];
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const { cartItems } = useCart();
+  const { cart } = useCart(); // ✅ FIXED
+
+  const cartCount =
+    cart?.items?.reduce((sum, item) => sum + item.qty, 0) || 0;
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [logo, setLogo] = useState("");
@@ -71,7 +74,7 @@ const Navbar = () => {
 
   return (
     <>
-      {/* ================= OVERLAY ================= */}
+      {/* OVERLAY */}
       {mobileMenuOpen && (
         <div
           onClick={() => setMobileMenuOpen(false)}
@@ -79,10 +82,10 @@ const Navbar = () => {
         />
       )}
 
-      {/* ================= NAVBAR ================= */}
+      {/* NAVBAR */}
       <nav className="sticky top-0 z-50 bg-white border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          {/* ===== LOGO + COMPANY NAME ===== */}
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          {/* LOGO */}
           <div
             onClick={() => navigate("/")}
             className="flex items-center gap-3 cursor-pointer"
@@ -93,13 +96,11 @@ const Navbar = () => {
               <>
                 <img
                   src={logo || "/logo.jpg"}
-                  alt={companyName || "Company Logo"}
-                  className="h-10 w-auto object-contain"
+                  alt="logo"
+                  className="h-10 object-contain"
                 />
-
-                {/* Company Name (Desktop only) */}
                 {companyName && (
-                  <span className="hidden sm:block text-lg font-semibold text-gray-900 tracking-tight">
+                  <span className="hidden sm:block text-lg font-semibold">
                     {companyName}
                   </span>
                 )}
@@ -107,7 +108,7 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* ===== DESKTOP NAV ===== */}
+          {/* DESKTOP NAV */}
           <ul className="hidden lg:flex items-center gap-8 text-sm font-medium">
             {navLinks.map((link) => (
               <li key={link.name}>
@@ -115,11 +116,9 @@ const Navbar = () => {
                   to={link.path}
                   end
                   className={({ isActive }) =>
-                    `relative pb-1 transition ${
-                      isActive
-                        ? "text-indigo-600 after:absolute after:left-0 after:-bottom-1 after:w-full after:border-b-2 after:border-indigo-600"
-                        : "text-gray-700 hover:text-indigo-600"
-                    }`
+                    isActive
+                      ? "text-indigo-600 border-b-2 border-indigo-600"
+                      : "text-gray-700 hover:text-indigo-600"
                   }
                 >
                   {link.name}
@@ -128,32 +127,30 @@ const Navbar = () => {
             ))}
           </ul>
 
-          {/* ===== RIGHT ICONS ===== */}
+          {/* RIGHT ICONS */}
           <div className="flex items-center gap-5">
             {/* USER */}
-            <button onClick={handleAvatarClick} aria-label="Profile">
-              <FaUserCircle className="text-2xl text-gray-600 hover:text-indigo-600 transition" />
+            <button onClick={handleAvatarClick}>
+              <FaUserCircle className="text-2xl text-gray-600 hover:text-indigo-600" />
             </button>
 
             {/* CART */}
             <button
               onClick={() => navigate("/cart")}
               className="relative"
-              aria-label="Cart"
             >
-              <FaShoppingBag className="text-2xl text-gray-600 hover:text-indigo-600 transition" />
-              {cartItems.length > 0 && (
+              <FaShoppingBag className="text-2xl text-gray-600 hover:text-indigo-600" />
+              {cartCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">
-                  {cartItems.length}
+                  {cartCount}
                 </span>
               )}
             </button>
 
-            {/* MOBILE MENU BUTTON */}
+            {/* MOBILE MENU */}
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="text-2xl lg:hidden text-gray-700"
-              aria-label="Open Menu"
+              className="text-2xl lg:hidden"
             >
               ☰
             </button>
@@ -161,61 +158,31 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* ================= MOBILE MENU ================= */}
+      {/* MOBILE MENU */}
       <aside
-        className={`fixed top-0 right-0 h-full w-[280px] bg-white shadow-xl z-50 p-6 transform transition-transform duration-300 ${
+        className={`fixed top-0 right-0 h-full w-[280px] bg-white z-50 p-6 transition-transform ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"
         }`}
       >
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Menu</h3>
+        <div className="flex justify-between mb-6">
+          <h3 className="text-lg font-semibold">Menu</h3>
           <FaTimes
             onClick={() => setMobileMenuOpen(false)}
-            className="text-xl text-gray-600 hover:text-red-500 cursor-pointer"
+            className="cursor-pointer"
           />
         </div>
 
         <ul className="flex flex-col gap-5 text-sm font-medium">
           {navLinks.map((link) => (
             <li key={link.name} onClick={() => setMobileMenuOpen(false)}>
-              <NavLink
-                to={link.path}
-                end
-                className={({ isActive }) =>
-                  `block transition ${
-                    isActive
-                      ? "text-indigo-600 font-semibold"
-                      : "text-gray-700 hover:text-indigo-600"
-                  }`
-                }
-              >
-                {link.name}
-              </NavLink>
+              <NavLink to={link.path}>{link.name}</NavLink>
             </li>
           ))}
 
           <li onClick={() => setMobileMenuOpen(false)}>
-            <NavLink
-              to="/cart"
-              className={({ isActive }) =>
-                `block transition ${
-                  isActive
-                    ? "text-indigo-600 font-semibold"
-                    : "text-gray-700 hover:text-indigo-600"
-                }`
-              }
-            >
-              Cart ({cartItems.length})
-            </NavLink>
+            <NavLink to="/cart">Cart ({cartCount})</NavLink>
           </li>
         </ul>
-
-        {/* MOBILE FOOTER */}
-        <div className="mt-auto border-t pt-4 text-xs text-gray-500 space-y-1">
-          <p>✔ Free Delivery</p>
-          <p>✔ 7-day Replacement</p>
-          <p>✔ Quality Assured</p>
-        </div>
       </aside>
     </>
   );

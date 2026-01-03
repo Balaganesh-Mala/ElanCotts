@@ -3,82 +3,170 @@ import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
 import Coupon from "../models/Coupon.model.js";
 
+/* ==========================================================
+   BUILD ORDER FROM CART
+   - previewOnly = true  → ONLY calculate price (NO DB write)
+   - previewOnly = false → Create order + reduce stock + clear cart
+========================================================== */
 export const buildOrderFromCart = async ({
   userId,
   shippingAddress,
   paymentMethod,
   couponCode,
+  previewOnly = false,
 }) => {
-  const cart = await Cart.findOne({ user: userId });
+  /* ================= CART ================= */
+  const cart = await Cart.findOne({ user: userId }).populate(
+    "items.product",
+    "name variants"
+  );
+
   if (!cart || cart.items.length === 0) {
     throw new Error("Cart is empty");
   }
 
-  // 🔒 Stock validation
+  /* ================= ITEMS PRICE ================= */
+  const itemsPrice = cart.items.reduce(
+    (sum, item) => sum + item.price * item.qty,
+    0
+  );
+
+  /* ================= STOCK VALIDATION ================= */
   for (const item of cart.items) {
-    const product = await Product.findById(item.product);
-    const variant = product.variants.find(
-      (v) => v.sku === item.variantSku
-    );
-    if (!variant || variant.stock < item.qty) {
+    const product = item.product;
+    if (!product) throw new Error("Product not found");
+
+    let matchedSize = null;
+
+    for (const variant of product.variants) {
+      const size = variant.sizes.find(
+        (s) => s.sku === item.variantSku
+      );
+      if (size) {
+        matchedSize = size;
+        break;
+      }
+    }
+
+    if (!matchedSize) {
+      throw new Error(`Invalid SKU ${item.variantSku}`);
+    }
+
+    if (matchedSize.stock < item.qty) {
       throw new Error(`Insufficient stock for ${item.variantSku}`);
     }
   }
 
-  // 🎟 Coupon
+  /* ================= COUPON ================= */
   let discount = 0;
-  let coupon = null;
+  let appliedCoupon = null;
 
   if (couponCode) {
-    const c = await Coupon.findOne({
+    const coupon = await Coupon.findOne({
       code: couponCode.toUpperCase(),
       isActive: true,
     });
 
-    if (!c) throw new Error("Invalid coupon");
-    if (new Date(c.expiry) < new Date()) throw new Error("Coupon expired");
-    if (cart.itemsPrice < c.minCartValue)
-      throw new Error(`Minimum cart value ₹${c.minCartValue}`);
+    if (!coupon) throw new Error("Invalid coupon");
+    if (new Date(coupon.expiry) < new Date())
+      throw new Error("Coupon expired");
+    if (itemsPrice < coupon.minCartValue)
+      throw new Error(`Minimum cart value ₹${coupon.minCartValue} required`);
 
-    if (c.type === "PERCENT") {
-      discount = (cart.itemsPrice * c.value) / 100;
-      if (c.maxDiscount)
-        discount = Math.min(discount, c.maxDiscount);
+    if (coupon.type === "PERCENT") {
+      discount = (itemsPrice * coupon.value) / 100;
+      if (coupon.maxDiscount) {
+        discount = Math.min(discount, coupon.maxDiscount);
+      }
     } else {
-      discount = c.value;
+      discount = coupon.value;
     }
 
-    discount = Math.min(discount, cart.itemsPrice);
-    coupon = { code: c.code, discount };
+    discount = Math.min(discount, itemsPrice);
+    appliedCoupon = {
+      code: coupon.code,
+      discount,
+    };
   }
 
-  // 🧾 Create Order
+  /* ================= TAX ================= */
+  const CGST_RATE = 0.025;
+  const SGST_RATE = 0.025;
+
+  const taxableAmount = itemsPrice - discount;
+
+  const cgst = Number((taxableAmount * CGST_RATE).toFixed(2));
+  const sgst = Number((taxableAmount * SGST_RATE).toFixed(2));
+  const totalTax = Number((cgst + sgst).toFixed(2));
+
+  const totalPrice = Number(
+    (taxableAmount + totalTax).toFixed(2)
+  );
+
+  /* ================= PREVIEW MODE ================= */
+  if (previewOnly) {
+    return {
+      itemsPrice,
+      discount,
+      tax: {
+        cgst,
+        sgst,
+        total: totalTax,
+      },
+      totalPrice,
+      coupon: appliedCoupon,
+    };
+  }
+
+  /* ================= CREATE ORDER ================= */
   const order = await Order.create({
     user: userId,
-    orderItems: cart.items.map((i) => ({
-      product: i.product,
-      variantSku: i.variantSku,
-      name: i.product.name,
-      price: i.price,
-      qty: i.qty,
+
+    orderItems: cart.items.map((item) => ({
+      product: item.product._id,
+      variantSku: item.variantSku,
+      name: item.product.name,
+      price: item.price,
+      qty: item.qty,
     })),
+
     shippingAddress,
+
     paymentMethod,
-    paymentStatus: paymentMethod === "COD" ? "PENDING" : "PAID",
-    itemsPrice: cart.itemsPrice,
+    paymentStatus: "PENDING",
+
+    itemsPrice,
     discountPrice: discount,
-    totalPrice: cart.itemsPrice - discount,
-    coupon,
+
+    tax: {
+      cgst,
+      sgst,
+      total: totalTax,
+    },
+
+    totalPrice,
+    coupon: appliedCoupon,
   });
 
-  // 📉 Reduce stock
+  /* ================= REDUCE STOCK ================= */
   for (const item of cart.items) {
     await Product.updateOne(
-      { _id: item.product, "variants.sku": item.variantSku },
-      { $inc: { "variants.$.stock": -item.qty } }
+      {
+        _id: item.product._id,
+        "variants.sizes.sku": item.variantSku,
+      },
+      {
+        $inc: {
+          "variants.$[].sizes.$[size].stock": -item.qty,
+        },
+      },
+      {
+        arrayFilters: [{ "size.sku": item.variantSku }],
+      }
     );
   }
 
+  /* ================= CLEAR CART ================= */
   await Cart.deleteOne({ user: userId });
 
   return order;

@@ -3,35 +3,74 @@ import Coupon from "../models/Coupon.model.js";
 
 /* ================= CREATE COUPON (ADMIN) ================= */
 export const createCoupon = asyncHandler(async (req, res) => {
-  let { code, type, value, minCartValue, maxDiscount, expiry } = req.body;
+  let { code, type, value, minCartValue = 0, maxDiscount, expiry } = req.body;
+
+  /* ================= BASIC VALIDATION ================= */
+  if (!code || !type || value === undefined || !expiry) {
+    res.status(400);
+    throw new Error("All required fields must be provided");
+  }
 
   if (value <= 0) {
     res.status(400);
     throw new Error("Coupon value must be greater than zero");
   }
 
-  const normalizedCode = code.toUpperCase();
+  if (minCartValue < 0) {
+    res.status(400);
+    throw new Error("Minimum cart value cannot be negative");
+  }
 
+  /* ================= TYPE VALIDATION ================= */
+  if (!["PERCENT", "FLAT"].includes(type)) {
+    res.status(400);
+    throw new Error("Invalid coupon type");
+  }
+
+  /* ================= EXPIRY VALIDATION ================= */
+  const expiryDate = new Date(expiry);
+  if (isNaN(expiryDate.getTime())) {
+    res.status(400);
+    throw new Error("Invalid expiry date");
+  }
+
+  if (expiryDate < new Date()) {
+    res.status(400);
+    throw new Error("Expiry date must be in the future");
+  }
+
+  /* ================= NORMALIZE CODE ================= */
+  const normalizedCode = code.trim().toUpperCase();
+
+  /* ================= DUPLICATE CHECK ================= */
   const exists = await Coupon.findOne({ code: normalizedCode });
   if (exists) {
     res.status(400);
     throw new Error("Coupon already exists");
   }
 
+  /* ================= MAX DISCOUNT RULE ================= */
+  if (type === "FLAT") {
+    maxDiscount = undefined; // not applicable
+  }
+
+  /* ================= CREATE COUPON ================= */
   const coupon = await Coupon.create({
     code: normalizedCode,
     type,
     value,
     minCartValue,
     maxDiscount,
-    expiry,
+    expiry: expiryDate,
   });
 
   res.status(201).json({
     success: true,
+    message: "Coupon created successfully",
     coupon,
   });
 });
+
 
 /* ================= GET ALL COUPONS (ADMIN) ================= */
 export const getCoupons = asyncHandler(async (req, res) => {

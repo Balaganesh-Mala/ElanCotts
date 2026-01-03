@@ -1,196 +1,217 @@
-import React, { useState, useEffect } from "react";
-import { getMyOrders } from "../api/order.api.js";
-import { Loader2 } from "lucide-react";
-import Button from "../components/ui/button.jsx";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import Swal from "sweetalert2";
+import api from "../api/axios";
 
 const Orders = () => {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
-
-  const PER_PAGE = 8;
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  /* ================= AUTH GUARD ================= */
+  useEffect(() => {
+    if (!token) {
+      navigate("/login");
+    }
+  }, [token, navigate]);
 
   /* ================= LOAD ORDERS ================= */
   useEffect(() => {
     const loadOrders = async () => {
-      if (!token) {
-        setOrders([]);
-        setLoading(false);
-        return;
-      }
-
       try {
         setLoading(true);
-        const res = await getMyOrders();
-        if (res.data.success) {
-          setOrders(res.data.orders || []);
-        }
+
+        const res = await api.get("/orders/my-orders", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setOrders(res.data.orders || []);
       } catch (err) {
-        console.error("Order fetch error:", err);
-        setOrders([]);
+        Swal.fire(
+          "Error",
+          err?.response?.data?.message || "Failed to load orders",
+          "error"
+        );
       } finally {
         setLoading(false);
       }
     };
 
     loadOrders();
-  }, []);
+  }, [token]);
 
-  /* ================= PAGINATION ================= */
-  const totalPages = Math.ceil(orders.length / PER_PAGE);
-  const start = (page - 1) * PER_PAGE;
-  const paginated = orders.slice(start, start + PER_PAGE);
+  /* ================= UI ================= */
+  if (loading) {
+  return (
+    <section className="max-w-7xl mx-auto px-4 py-8 space-y-6 animate-pulse">
+      
+      {/* PAGE HEADER SKELETON */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <div className="h-6 w-32 bg-slate-200 rounded" />
+          <div className="h-4 w-48 bg-slate-200 rounded" />
+        </div>
+        <div className="h-9 w-36 bg-slate-200 rounded-lg" />
+      </div>
 
-  /* ================= STATUS BADGE ================= */
-  const statusStyle = (status) => {
-    if (!status) return "bg-gray-100 text-gray-700";
-    if (status.toLowerCase().includes("delivered"))
-      return "bg-green-100 text-green-700";
-    if (status.toLowerCase().includes("cancel"))
-      return "bg-red-100 text-red-700";
-    if (status.toLowerCase().includes("shipped"))
-      return "bg-blue-100 text-blue-700";
-    return "bg-yellow-100 text-yellow-700";
-  };
+      {/* TABLE SKELETON */}
+      <div className="overflow-hidden bg-white rounded-2xl border border-slate-200 shadow-sm">
+        <div className="divide-y">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="grid grid-cols-7 gap-4 px-5 py-5 items-center"
+            >
+              <div className="h-4 w-20 bg-slate-200 rounded" />
+              <div className="h-4 w-24 bg-slate-200 rounded" />
+              <div className="h-6 w-10 bg-slate-200 rounded-full mx-auto" />
+              <div className="h-4 w-20 bg-slate-200 rounded" />
+              <div className="h-4 w-24 bg-slate-200 rounded" />
+              <div className="h-6 w-24 bg-slate-200 rounded-full" />
+              <div className="h-4 w-20 bg-slate-200 rounded ml-auto" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+  if (orders.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
+        <p className="text-lg font-medium">You have no orders yet</p>
+        <button
+          onClick={() => navigate("/shop")}
+          className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+        >
+          Continue Shopping
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-gray-50 px-4 sm:px-8 py-12">
-      <div className="max-w-7xl mx-auto">
-
-        {/* HEADER */}
-        <header className="mb-8">
-          <h1 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-            Order History
-          </h1>
-          <p className="text-sm text-gray-600 mt-1">
-            View your past purchases and order details
-          </p>
-        </header>
-
-        {/* GUEST STATE */}
-        {!token && (
-          <div className="bg-white border rounded-2xl p-10 text-center shadow-sm">
-            <p className="text-gray-500 mb-4">
-              Please login to view your orders.
-            </p>
-            <Button onClick={() => navigate("/login")}>
-              Login to Continue
-            </Button>
-          </div>
-        )}
-
-        {/* LOADING */}
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
-          </div>
-        ) : (
-          token && (
-            <>
-              {/* EMPTY STATE */}
-              {!orders.length && (
-                <div className="bg-white border rounded-2xl p-10 text-center shadow-sm">
-                  <p className="text-gray-500 mb-4">
-                    You haven’t placed any orders yet.
-                  </p>
-                  <Button onClick={() => navigate("/shop")}>
-                    Start Shopping
-                  </Button>
-                </div>
-              )}
-
-              {/* TABLE */}
-              {orders.length > 0 && (
-                <div className="overflow-x-auto bg-white border rounded-2xl shadow-sm">
-                  <table className="min-w-full text-sm">
-                    <thead className="bg-gray-100 border-b">
-                      <tr>
-                        <th className="px-5 py-4 text-left font-semibold text-gray-700">
-                          Order ID
-                        </th>
-                        <th className="px-5 py-4 text-left font-semibold text-gray-700">
-                          Items
-                        </th>
-                        <th className="px-5 py-4 text-center font-semibold text-gray-700">
-                          Payment
-                        </th>
-                        <th className="px-5 py-4 text-center font-semibold text-gray-700">
-                          Status
-                        </th>
-                        <th className="px-5 py-4 text-right font-semibold text-gray-700">
-                          Total
-                        </th>
-                      </tr>
-                    </thead>
-
-                    <tbody>
-                      {paginated.map((o) => (
-                        <tr
-                          key={o._id}
-                          className="border-b hover:bg-gray-50 transition"
-                        >
-                          <td className="px-5 py-4 font-semibold text-gray-900">
-                            {o.orderNo || o._id.slice(-8)}
-                          </td>
-
-                          <td className="px-5 py-4 text-gray-700 max-w-[280px]">
-                            <p className="line-clamp-2">
-                              {o.orderItems
-                                ?.map((i) => `${i.name} (${i.size})`)
-                                .join(", ")}
-                            </p>
-                          </td>
-
-                          <td className="px-5 py-4 text-center text-gray-700">
-                            {o.paymentMethod}
-                          </td>
-
-                          <td className="px-5 py-4 text-center">
-                            <span
-                              className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle(
-                                o.orderStatus
-                              )}`}
-                            >
-                              {o.orderStatus}
-                            </span>
-                          </td>
-
-                          <td className="px-5 py-4 text-right font-bold text-gray-900">
-                            ₹{(o.totalPrice || 0).toLocaleString()}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </>
-          )
-        )}
-
-        {/* PAGINATION */}
-        {!loading && token && totalPages > 1 && (
-          <footer className="flex justify-end gap-3 mt-8">
-            <Button
-              disabled={page === 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
-              ← Prev
-            </Button>
-            <Button
-              disabled={page === totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
-              Next →
-            </Button>
-          </footer>
-        )}
+  <section className="max-w-7xl mx-auto px-4 py-8 space-y-6">
+    {/* PAGE HEADER */}
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-800">
+          My Orders
+        </h1>
+        <p className="text-sm text-slate-500">
+          Track and manage your orders
+        </p>
       </div>
-    </main>
-  );
+
+      <button
+        onClick={() => navigate("/shop")}
+        className="px-4 py-2 rounded-lg text-sm font-medium
+        bg-indigo-600 text-white hover:bg-indigo-700 transition"
+      >
+        Continue Shopping
+      </button>
+    </div>
+
+    {/* TABLE */}
+    <div className="overflow-x-auto bg-white rounded-2xl border border-slate-200 shadow-sm">
+      <table className="min-w-full text-sm">
+        <thead className="bg-slate-100 border-b">
+          <tr className="text-slate-600">
+            <th className="px-5 py-4 font-medium">Order ID</th>
+            <th className="px-5 py-4 font-medium">Date</th>
+            <th className="px-5 py-4 font-medium text-center">Items</th>
+            <th className="px-5 py-4 font-medium">Total</th>
+            <th className="px-5 py-4 font-medium">Payment</th>
+            <th className="px-5 py-4 font-medium">Status</th>
+            <th className="px-5 py-4 font-medium text-right">Action</th>
+          </tr>
+        </thead>
+
+        <tbody className="divide-y">
+          {orders.map((order) => (
+            <tr
+              key={order._id}
+              className="hover:bg-slate-50 transition"
+            >
+              {/* ORDER ID */}
+              <td className="px-5 py-4">
+                <p className="font-semibold text-slate-800">
+                  #{order._id.slice(-6)}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {order.paymentMethod}
+                </p>
+              </td>
+
+              {/* DATE */}
+              <td className="px-5 py-4 text-slate-600">
+                {new Date(order.createdAt).toLocaleDateString()}
+              </td>
+
+              {/* ITEMS COUNT */}
+              <td className="px-5 py-4 text-center">
+                <span className="inline-flex items-center justify-center
+                  min-w-[28px] px-2 py-1 rounded-full
+                  bg-slate-100 text-slate-700 text-xs font-semibold">
+                  {order.orderItems.length}
+                </span>
+              </td>
+
+              {/* TOTAL */}
+              <td className="px-5 py-4 font-semibold text-slate-800">
+                ₹{order.totalPrice.toFixed(2)}
+              </td>
+
+              {/* PAYMENT STATUS */}
+              <td className="px-5 py-4">
+                <p className="text-slate-700 font-medium">
+                  {order.paymentStatus}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {order.paymentMethod}
+                </p>
+              </td>
+
+              {/* ORDER STATUS */}
+              <td className="px-5 py-4">
+                <span
+                  className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold
+                  ${
+                    order.orderStatus === "DELIVERED"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : order.orderStatus === "CANCELLED"
+                      ? "bg-red-100 text-red-700"
+                      : "bg-amber-100 text-amber-700"
+                  }`}
+                >
+                  {order.orderStatus}
+                </span>
+              </td>
+
+              {/* ACTION */}
+              <td className="px-5 py-4 text-right">
+                <button
+                  onClick={() => navigate(`/orders/${order._id}`)}
+                  className="text-indigo-600 font-medium hover:underline"
+                >
+                  View / Track →
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+);
+
+
 };
 
 export default Orders;

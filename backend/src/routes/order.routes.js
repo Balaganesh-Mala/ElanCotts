@@ -6,6 +6,8 @@ import {
   getAllOrders,
   updateOrderStatus,
   deleteOrder,
+  downloadInvoice,
+  previewOrder,
 } from "../controllers/order.controller.js";
 
 import { protect } from "../middleware/auth.middleware.js";
@@ -37,6 +39,9 @@ router.get("/my-orders", protect, getMyOrders);
  * @access  Protected (User)
  */
 router.get("/:id", protect, getMyOrderById);
+router.get("/:id/invoice", protect, downloadInvoice);
+router.post("/preview", protect, previewOrder);
+
 
 /* =====================================================
    ADMIN ROUTES

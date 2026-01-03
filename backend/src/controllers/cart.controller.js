@@ -21,18 +21,26 @@ export const addToCart = async (req, res) => {
     });
   }
 
-  const variant = product.variants.find(
-    (v) => v.sku === variantSku && v.isActive
-  );
+  let matchedVariant = null;
+  let matchedSize = null;
 
-  if (!variant) {
+  for (const variant of product.variants) {
+    const size = variant.sizes.find((s) => s.sku === variantSku);
+    if (size) {
+      matchedVariant = variant;
+      matchedSize = size;
+      break;
+    }
+  }
+
+  if (!matchedVariant || !matchedSize) {
     return res.status(400).json({
       success: false,
-      message: "Invalid variant",
+      message: "Invalid variant SKU",
     });
   }
 
-  if (variant.stock < qty) {
+  if (matchedSize.stock < qty) {
     return res.status(400).json({
       success: false,
       message: "Insufficient stock",
@@ -59,7 +67,7 @@ export const addToCart = async (req, res) => {
       product: productId,
       variantSku,
       qty,
-      price: variant.price,
+      price: matchedSize.price,
     });
   }
 
@@ -72,6 +80,7 @@ export const addToCart = async (req, res) => {
     cart,
   });
 };
+
 
 /* ================= GET CART ================= */
 export const getCart = async (req, res) => {
@@ -160,26 +169,47 @@ export const removeCartItem = async (req, res) => {
 
 /* ================= APPLY COUPON ================= */
 export const applyCouponToCart = async (req, res) => {
-  const { code, discount } = req.body;
+  const { code } = req.body;
 
   const cart = await Cart.findOne({ user: req.user._id });
-  if (!cart) {
-    return res.status(404).json({
-      success: false,
-      message: "Cart not found",
-    });
+  if (!cart) throw new Error("Cart not found");
+
+  const coupon = await Coupon.findOne({
+    code: code.toUpperCase(),
+    isActive: true,
+  });
+
+  if (!coupon) throw new Error("Invalid coupon");
+
+  if (new Date(coupon.expiry) < new Date())
+    throw new Error("Coupon expired");
+
+  if (cart.itemsPrice < coupon.minCartValue)
+    throw new Error(`Minimum ₹${coupon.minCartValue} required`);
+
+  let discount = 0;
+
+  if (coupon.type === "PERCENT") {
+    discount = (cart.itemsPrice * coupon.value) / 100;
+    if (coupon.maxDiscount)
+      discount = Math.min(discount, coupon.maxDiscount);
   }
 
-  cart.coupon = { code, discount };
-  calculateCartTotals(cart);
+  if (coupon.type === "FLAT") {
+    discount = coupon.value;
+  }
 
+  discount = Math.min(discount, cart.itemsPrice);
+
+  cart.coupon = {
+    code: coupon.code,
+    discount,
+  };
+
+  calculateCartTotals(cart);
   await cart.save();
 
-  res.json({
-    success: true,
-    message: "Coupon applied",
-    cart,
-  });
+  res.json({ success: true, cart });
 };
 
 
@@ -190,5 +220,83 @@ export const clearCart = async (req, res) => {
   res.json({
     success: true,
     message: "Cart cleared",
+  });
+};
+
+export const mergeGuestCart = async (req, res) => {
+  const { items } = req.body;
+
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "No guest cart items provided",
+    });
+  }
+
+  // 🔐 Get or create user cart
+  let cart = await Cart.findOne({ user: req.user._id });
+  if (!cart) {
+    cart = await Cart.create({
+      user: req.user._id,
+      items: [],
+    });
+  }
+
+  for (const guestItem of items) {
+    const { productId, variantSku, qty } = guestItem;
+
+    if (!productId || !variantSku || !qty || qty <= 0) continue;
+
+    // 🔍 Validate product & SKU
+    const product = await Product.findById(productId);
+    if (!product || !product.isActive) continue;
+
+    let matchedSize = null;
+
+    for (const variant of product.variants) {
+      const size = variant.sizes.find((s) => s.sku === variantSku);
+      if (size) {
+        matchedSize = size;
+        break;
+      }
+    }
+
+    if (!matchedSize) continue;
+
+    // 📦 Stock safety
+    const safeQty = Math.min(qty, matchedSize.stock);
+    if (safeQty <= 0) continue;
+
+    // 🧺 Merge with existing cart item
+    const existingItem = cart.items.find(
+      (i) => i.variantSku === variantSku
+    );
+
+    if (existingItem) {
+      existingItem.qty = Math.min(
+        existingItem.qty + safeQty,
+        matchedSize.stock
+      );
+    } else {
+      cart.items.push({
+        product: productId,
+        variantSku,
+        qty: safeQty,
+        price: matchedSize.price, // snapshot
+      });
+    }
+  }
+
+  // ❌ Remove coupon (guest coupons not trusted)
+  cart.coupon = undefined;
+
+  // 🔢 Recalculate totals
+  calculateCartTotals(cart);
+  await cart.save();
+
+  res.json({
+    success: true,
+    message: "Guest cart merged successfully",
+    cart,
   });
 };

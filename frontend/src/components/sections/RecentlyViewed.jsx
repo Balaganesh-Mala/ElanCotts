@@ -11,7 +11,7 @@ const RecentlyViewed = () => {
   useEffect(() => {
     const loadRecentlyViewed = async () => {
       try {
-        const res = await api.get("/products");
+        const res = await api.get("/products/all");
         const allProducts = res.data.products || [];
 
         const viewed =

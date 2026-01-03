@@ -5,13 +5,14 @@ import { Loader2 } from "lucide-react";
 import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 
+
 import api from "../api/axios";
 import { useCart } from "../context/CartContext";
 
 const ProductDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
-  const { addToCartBackend } = useCart();
+  const { addToCartBackend, addToLocalCart } = useCart();
 
   /* ================= STATE ================= */
   const [product, setProduct] = useState(null);
@@ -62,34 +63,26 @@ const ProductDetails = () => {
   const stock = activeSize?.stock ?? 0;
 
   /* ================= ADD TO CART ================= */
-  const handleAddToCart = async () => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      return Swal.fire("Login Required", "Please login", "warning").then(() =>
-        navigate("/login")
-      );
-    }
+const handleAddToCart = async () => {
+  if (!activeSize) return;
 
-    if (!activeColor || !activeSize) {
-      return Swal.fire("Select Variant", "Choose color & size", "warning");
-    }
+  const token = localStorage.getItem("token");
+  if (!token) {
+    Swal.fire("Login Required", "Please login to continue", "warning");
+    navigate("/login");
+    return;
+  }
 
-    try {
-      await addToCartBackend({
-        productId: product._id,
-        sku: activeSize.sku,
-        quantity: qty,
-      });
+  await addToCartBackend({
+    productId: product._id,
+    variantSku: activeSize.sku,
+    qty,
+  });
 
-      Swal.fire("Added to Cart", "Product added successfully", "success");
-    } catch (err) {
-      Swal.fire(
-        "Error",
-        err?.response?.data?.message || "Failed to add to cart",
-        "error"
-      );
-    }
-  };
+  Swal.fire("Added", "Product added to cart", "success");
+};
+
+
 
   /* ================= LOADING ================= */
   if (loading) {
@@ -136,61 +129,61 @@ const ProductDetails = () => {
       <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* ================= IMAGES ================= */}
         <div className="lg:sticky lg:top-24 self-start">
-        <div className="flex flex-col lg:flex-row gap-4">
-          {/* THUMBNAILS */}
-          <div
-            className="order-2 lg:order-1 flex lg:flex-col gap-3
+          <div className="flex flex-col lg:flex-row gap-4">
+            {/* THUMBNAILS */}
+            <div
+              className="order-2 lg:order-1 flex lg:flex-col gap-3
                overflow-x-auto lg:overflow-visible"
-          >
-            {activeColor?.images?.map((img, i) => (
-              <button
-                key={i}
-                onClick={() => setSelectedImg(img.url)}
-                className={`flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20
+            >
+              {activeColor?.images?.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedImg(img.url)}
+                  className={`flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20
           rounded-lg border overflow-hidden transition
           ${
             selectedImg === img.url
               ? "border-indigo-600 ring-1 ring-indigo-600"
               : "border-slate-300 hover:border-slate-400"
           }`}
-              >
-                <img
-                  src={img.url}
-                  alt={product.name}
-                  className="w-full h-full object-cover"
-                />
-              </button>
-            ))}
-          </div>
+                >
+                  <img
+                    src={img.url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
 
-          {/* MAIN IMAGE */}
-          <div
-            className="order-1 lg:order-2 relative flex-1
+            {/* MAIN IMAGE */}
+            <div
+              className="order-1 lg:order-2 relative flex-1
                rounded-2xl border overflow-hidden
                bg-slate-50"
-            onMouseMove={(e) => {
-              const { left, top, width, height } =
-                e.currentTarget.getBoundingClientRect();
+              onMouseMove={(e) => {
+                const { left, top, width, height } =
+                  e.currentTarget.getBoundingClientRect();
 
-              const x = ((e.clientX - left) / width) * 100;
-              const y = ((e.clientY - top) / height) * 100;
+                const x = ((e.clientX - left) / width) * 100;
+                const y = ((e.clientY - top) / height) * 100;
 
-              setZoomStyle({
-                transform: "scale(1.8)",
-                transformOrigin: `${x}% ${y}%`,
-              });
-            }}
-            onMouseLeave={() => setZoomStyle({})}
-          >
-            <img
-              src={selectedImg}
-              alt={product.name}
-              className="w-full h-[300px] sm:h-[360px] lg:h-[440px]
+                setZoomStyle({
+                  transform: "scale(1.8)",
+                  transformOrigin: `${x}% ${y}%`,
+                });
+              }}
+              onMouseLeave={() => setZoomStyle({})}
+            >
+              <img
+                src={selectedImg}
+                alt={product.name}
+                className="w-full h-[300px] sm:h-[360px] lg:h-[440px]
                  object-cover transition-transform duration-200"
-              style={zoomStyle}
-            />
+                style={zoomStyle}
+              />
+            </div>
           </div>
-        </div>
         </div>
 
         {/* ================= INFO ================= */}
@@ -378,17 +371,37 @@ const ProductDetails = () => {
             {/* BUY NOW */}
             <button
               disabled={!activeSize || stock === 0}
-              onClick={() => {
-                handleAddToCart();
-                navigate("/checkout", {
-                  state: {
-                    buyNow: true,
-                    product: product._id,
-                    sku: activeSize?.sku,
-                    quantity: qty,
-                  },
-                });
-              }}
+              onClick={async () => {
+  if (!activeSize) return;
+
+  const token = localStorage.getItem("token");
+
+  // 🟡 GUEST BUY NOW
+  if (!token) {
+    navigate("/checkout", {
+      state: {
+        guestBuyNow: true,
+        item: {
+          productId: product._id,
+          variantSku: activeSize.sku,
+          qty,
+          price: activeSize.price,
+        },
+      },
+    });
+    return;
+  }
+
+  // 🟢 AUTH BUY NOW
+  await addToCartBackend({
+    productId: product._id,
+    variantSku: activeSize.sku,
+    qty,
+  });
+
+  navigate("/checkout", { state: { buyNow: true } });
+}}
+
               className="w-full bg-blue-600 text-white py-3 rounded-lg
       text-sm font-semibold hover:bg-blue-700 transition
       disabled:opacity-50 disabled:cursor-not-allowed"

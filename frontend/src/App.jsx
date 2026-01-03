@@ -1,16 +1,7 @@
-import React from "react";
-import Navbar from "./components/layout/Navbar";
 import AppRoutes from "./routes/AppRoutes";
-import Footer from "./components/layout/Footer";
 
 function App() {
-  return (
-    <>
-      <Navbar />
-      <AppRoutes />
-      <Footer/>
-    </>
-  );
+  return <AppRoutes />;
 }
 
 export default App;

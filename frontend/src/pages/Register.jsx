@@ -53,102 +53,181 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="bg-white w-full max-w-[420px] sm:max-w-[460px] rounded-2xl shadow-lg p-6 sm:p-8 space-y-5">
+  <div className="min-h-screen grid lg:grid-cols-2">
 
-        <h2 className="text-2xl font-extrabold text-gray-900 text-center">
-          {loading ? "Registering..." : "Register"}
-        </h2>
+    {/* ================= LEFT PANEL ================= */}
+    <div className="hidden lg:flex flex-col justify-center px-14
+      bg-gradient-to-br from-indigo-600 via-blue-600 to-sky-600 text-white"
+    >
+      <h1 className="text-4xl font-extrabold leading-tight">
+        Create your account 🚀
+      </h1>
 
+      <p className="mt-4 text-blue-100 max-w-md">
+        Join us to place orders faster, track deliveries, and download invoices
+        anytime from your dashboard.
+      </p>
+
+      <ul className="mt-8 space-y-4 text-sm">
+        <li className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-white"></span>
+          Quick & secure registration
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-white"></span>
+          Order tracking & history
+        </li>
+        <li className="flex items-center gap-3">
+          <span className="h-2 w-2 rounded-full bg-white"></span>
+          Easy invoice downloads
+        </li>
+      </ul>
+
+      <p className="mt-12 text-xs text-blue-200">
+        © {new Date().getFullYear()} Your Brand. All rights reserved.
+      </p>
+    </div>
+
+    {/* ================= RIGHT PANEL ================= */}
+    <div className="flex items-center justify-center px-4">
+      <aside className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 space-y-6">
+
+        {/* TITLE */}
+        <div className="text-center space-y-1">
+          <h2 className="text-2xl font-bold text-slate-900">
+            {loading ? "Creating your account…" : "Create an account"}
+          </h2>
+          <p className="text-sm text-slate-500">
+            Fill in the details to get started
+          </p>
+        </div>
+
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-5">
 
-          {/* Name */}
-          <div className="relative">
-            <input
-              onChange={handleChange}
-              name="name"
-              value={form.name}
-              placeholder="Enter user name"
-              className="w-full bg-gray-100 px-4 py-3 text-sm rounded-full outline-none border focus:border-black"
-              required
-            />
-            <FaUserCircle className="absolute right-4 top-3.5 text-gray-400" />
-          </div>
-
-          {/* Email */}
-          <div className="relative">
-            <input
-              onChange={handleChange}
-              name="email"
-              value={form.email}
-              type="email"
-              placeholder="Enter your email"
-              className="w-full bg-gray-100 px-4 py-3 text-sm rounded-full outline-none border focus:border-black"
-              required
-            />
-            <FaEnvelope className="absolute right-4 top-3.5 text-gray-400" />
-          </div>
-
-          {/* Phone */}
-          <div className="relative">
-            <input
-              onChange={handleChange}
-              name="phone"
-              value={form.phone}
-              type="tel"
-              placeholder="Enter phone number"
-              className="w-full bg-gray-100 px-4 py-3 text-sm rounded-full outline-none border focus:border-black"
-              required
-            />
-            <FaPhone className="absolute right-4 top-3.5 text-gray-400" />
-          </div>
-
-          {/* Password */}
-          <div className="relative">
-            <input
-              onChange={handleChange}
-              name="password"
-              value={form.password}
-              type={showPassword ? "text" : "password"}
-              placeholder="Enter password"
-              className="w-full bg-gray-100 px-4 py-3 text-sm rounded-full outline-none border focus:border-black"
-              required
-            />
-            {showPassword ? (
-              <FaEyeSlash
-                onClick={() => setShowPassword(false)}
-                className="absolute right-4 top-4 text-gray-400 cursor-pointer"
+          {/* NAME */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+              Full Name
+            </label>
+            <div className="relative">
+              <input
+                onChange={handleChange}
+                name="name"
+                value={form.name}
+                placeholder="Your name"
+                className="w-full px-4 py-3 text-sm rounded-xl
+                border border-slate-200 bg-slate-50
+                focus:bg-white focus:border-indigo-600 outline-none"
+                required
               />
-            ) : (
-              <FaEye
-                onClick={() => setShowPassword(true)}
-                className="absolute right-4 top-4 text-gray-400 cursor-pointer"
-              />
-            )}
+              <FaUserCircle className="absolute right-4 top-3.5 text-slate-400" />
+            </div>
           </div>
 
-          {/* Submit Button */}
+          {/* EMAIL */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+              Email address
+            </label>
+            <div className="relative">
+              <input
+                onChange={handleChange}
+                name="email"
+                value={form.email}
+                type="email"
+                placeholder="you@example.com"
+                className="w-full px-4 py-3 text-sm rounded-xl
+                border border-slate-200 bg-slate-50
+                focus:bg-white focus:border-indigo-600 outline-none"
+                required
+              />
+              <FaEnvelope className="absolute right-4 top-3.5 text-slate-400" />
+            </div>
+          </div>
+
+          {/* PHONE */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+              Phone Number
+            </label>
+            <div className="relative">
+              <input
+                onChange={handleChange}
+                name="phone"
+                value={form.phone}
+                type="tel"
+                placeholder="10-digit mobile number"
+                className="w-full px-4 py-3 text-sm rounded-xl
+                border border-slate-200 bg-slate-50
+                focus:bg-white focus:border-indigo-600 outline-none"
+                required
+              />
+              <FaPhone className="absolute right-4 top-3.5 text-slate-400" />
+            </div>
+          </div>
+
+          {/* PASSWORD */}
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-slate-600">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                onChange={handleChange}
+                name="password"
+                value={form.password}
+                type={showPassword ? "text" : "password"}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 text-sm rounded-xl
+                border border-slate-200 bg-slate-50
+                focus:bg-white focus:border-indigo-600 outline-none"
+                required
+              />
+              {showPassword ? (
+                <FaEyeSlash
+                  onClick={() => setShowPassword(false)}
+                  className="absolute right-4 top-3.5 text-slate-400 cursor-pointer"
+                />
+              ) : (
+                <FaEye
+                  onClick={() => setShowPassword(true)}
+                  className="absolute right-4 top-3.5 text-slate-400 cursor-pointer"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* SUBMIT */}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-black text-white py-3 rounded-full font-bold hover:bg-gray-800 transition text-sm"
+            className={`w-full flex items-center justify-center gap-2
+              py-3 rounded-xl font-semibold text-sm text-white
+              bg-gradient-to-r from-indigo-600 to-blue-600
+              hover:from-indigo-700 hover:to-blue-700
+              transition
+              ${loading ? "opacity-70 cursor-not-allowed" : ""}`}
           >
-            {loading ? "Processing..." : "Register"}
+            {loading ? "Processing…" : "Create Account"}
           </button>
-
         </form>
 
-        {/* Login Redirect */}
-        <p className="text-center text-xs text-gray-600 font-medium">
-          Have an account?{" "}
-          <Link to="/login" className="text-orange-500 font-bold hover:underline">
-            Log In
+        {/* LOGIN LINK */}
+        <p className="text-center text-xs text-slate-600">
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-indigo-600 font-semibold hover:underline"
+          >
+            Log in
           </Link>
         </p>
-
-      </div>
+      </aside>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default Register;

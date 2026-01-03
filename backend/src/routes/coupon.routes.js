@@ -13,14 +13,14 @@ import { isAdmin } from "../middleware/admin.middleware.js";
 
 const router = express.Router();
 
+/* USER (PUBLIC / USER-SAFE) */
+router.get("/active-announcement", getActiveAnnouncement);
+router.post("/validate", protect, validateCoupon);
+
 /* ADMIN */
 router.post("/", protect, isAdmin, createCoupon);
 router.get("/", protect, isAdmin, getCoupons);
 router.put("/:id", protect, isAdmin, updateCoupon);
 router.delete("/:id", protect, isAdmin, deleteCoupon);
-
-/* USER (CHECKOUT VALIDATION) */
-router.post("/validate", protect, validateCoupon);
-router.get("/active-announcement",protect, getActiveAnnouncement);
 
 export default router;

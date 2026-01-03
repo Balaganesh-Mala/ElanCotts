@@ -5,28 +5,40 @@ import User from "../models/user.model.js";
 export const protect = asyncHandler(async (req, res, next) => {
   let token;
 
-  // 1️⃣ Extract token
-  if (req.headers.authorization && req.headers.authorization.startsWith("Bearer")) {
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer ")
+  ) {
     token = req.headers.authorization.split(" ")[1];
   }
 
-  if (!token) {
-    res.status(401);
-    throw new Error("Not Authorized, Token Missing ❌");
+  // 🔥 VERY IMPORTANT CHECK
+  if (!token || token === "null" || token === "undefined") {
+    return res.status(401).json({
+      success: false,
+      message: "Not authorized, token missing",
+    });
   }
 
-  // 2️⃣ Verify token
-  const decoded = jwt.verify(token, process.env.JWT_SECRET);
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  // 3️⃣ Find user in DB
-  const user = await User.findById(decoded.id);
-  if (!user) {
-    res.status(404);
-    throw new Error("User Not Found");
+    req.user = await User.findById(decoded.id).select("-password");
+
+    if (!req.user) {
+      return res.status(401).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    next();
+  } catch (error) {
+    console.error("🔥 JWT Error:", error.message);
+
+    return res.status(401).json({
+      success: false,
+      message: "Not authorized, token invalid",
+    });
   }
-
-  // 4️⃣ Attach mongo user to request
-  req.user = user;  // ✅ Now `req.user._id` works in cart & order
-
-  next();
 });

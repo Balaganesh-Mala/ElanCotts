@@ -201,6 +201,9 @@ const productSchema = new mongoose.Schema(
     ratingsAverage: {
       type: Number,
       default: 0,
+      min: 0,
+      max: 5,
+      set: (v) => Math.round(v * 10) / 10, // 4.3 ⭐
     },
 
     ratingsCount: {
@@ -266,8 +269,15 @@ const productSchema = new mongoose.Schema(
 );
 
 /* ================= INDEXES ================= */
+productSchema.index(
+  { "variants.sizes.sku": 1 },
+  { unique: true, sparse: true }
+);
+
 productSchema.index({ name: "text", shortDescription: "text" });
 productSchema.index({ category: 1, isActive: 1 });
 
-const Product = mongoose.model("Product", productSchema);
+const Product =
+  mongoose.models.Product || mongoose.model("Product", productSchema);
+
 export default Product;

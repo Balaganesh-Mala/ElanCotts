@@ -16,6 +16,16 @@ const orderSchema = new mongoose.Schema(
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
 
     orderItems: [orderItemSchema],
+    orderNo: {
+      type: String,
+      unique: true,
+      index: true,
+    },
+    tax: {
+      cgst: { type: Number, default: 0 },
+      sgst: { type: Number, default: 0 },
+      total: { type: Number, default: 0 },
+    },
 
     shippingAddress: {
       name: String,
@@ -65,5 +75,13 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+
+orderSchema.pre("save", async function (next) {
+  if (!this.orderNo) {
+    this.orderNo = `ORD-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+  }
+  next();
+});
 
 export default mongoose.model("Order", orderSchema);
