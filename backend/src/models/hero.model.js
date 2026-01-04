@@ -20,6 +20,12 @@ const heroSchema = new mongoose.Schema(
       enum: ["INTERNAL", "EXTERNAL", "ANCHOR"],
       default: "INTERNAL",
     },
+    type: {
+      type: String,
+      enum: ["HERO", "FIXED_BANNER"],
+      required: true,
+    },
+
     link: {
       type: String,
       default: "",
@@ -30,7 +36,7 @@ const heroSchema = new mongoose.Schema(
     isActive: { type: Boolean, default: true },
 
     // 🔥 ORDER IS IMPORTANT (banner priority)
-    order: { type: Number, default: 0 },
+    order: { type: Number, required: true, unique: true, index: true },
   },
   { timestamps: true }
 );

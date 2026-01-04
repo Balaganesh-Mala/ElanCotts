@@ -5,17 +5,22 @@ import { Loader2 } from "lucide-react";
 import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { useRecentlyViewed } from "../context/RecentlyViewedContext";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination } from "swiper/modules";
+import { useRef } from "react";
 
+import "swiper/css";
+import "swiper/css/pagination";
 
 import api from "../api/axios";
 import { useCart } from "../context/CartContext";
+import SimilarProducts from "../components/ui/SimilarProducts";
 
 const ProductDetails = () => {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { addToCartBackend } = useCart();
   const { addRecentlyViewed } = useRecentlyViewed();
-
 
   /* ================= STATE ================= */
   const [product, setProduct] = useState(null);
@@ -26,39 +31,39 @@ const ProductDetails = () => {
   const [activeSize, setActiveSize] = useState(null);
   const [selectedImg, setSelectedImg] = useState(null);
   const [qty, setQty] = useState(1);
+  const swiperRef = useRef(null);
 
   /* ================= LOAD PRODUCT ================= */
   useEffect(() => {
-  const loadProduct = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/products/${slug}`);
-      const p = res.data.product;
+    const loadProduct = async () => {
+      try {
+        setLoading(true);
+        const res = await api.get(`/products/${slug}`);
+        const p = res.data.product;
 
-      if (!p || !p.variants?.length) {
-        throw new Error("Invalid product");
+        if (!p || !p.variants?.length) {
+          throw new Error("Invalid product");
+        }
+
+        setProduct(p);
+
+        // ✅ ADD HERE
+        addRecentlyViewed(p);
+
+        const firstVariant = p.variants[0];
+        setActiveColor(firstVariant);
+        setSelectedImg(firstVariant.images?.[0]?.url || null);
+        setActiveSize(firstVariant.sizes?.[0] || null);
+      } catch {
+        Swal.fire("Error", "Product not found", "error");
+        navigate("/shop");
+      } finally {
+        setLoading(false);
       }
+    };
 
-      setProduct(p);
-
-      // ✅ ADD HERE
-      addRecentlyViewed(p);
-
-      const firstVariant = p.variants[0];
-      setActiveColor(firstVariant);
-      setSelectedImg(firstVariant.images?.[0]?.url || null);
-      setActiveSize(firstVariant.sizes?.[0] || null);
-    } catch {
-      Swal.fire("Error", "Product not found", "error");
-      navigate("/shop");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  loadProduct();
-}, [slug]);
-
+    loadProduct();
+  }, [slug]);
 
   useEffect(() => {
     setQty(1);
@@ -70,26 +75,24 @@ const ProductDetails = () => {
   const stock = activeSize?.stock ?? 0;
 
   /* ================= ADD TO CART ================= */
-const handleAddToCart = async () => {
-  if (!activeSize) return;
+  const handleAddToCart = async () => {
+    if (!activeSize) return;
 
-  const token = localStorage.getItem("token");
-  if (!token) {
-    Swal.fire("Login Required", "Please login to continue", "warning");
-    navigate("/login");
-    return;
-  }
+    const token = localStorage.getItem("token");
+    if (!token) {
+      Swal.fire("Login Required", "Please login to continue", "warning");
+      navigate("/login");
+      return;
+    }
 
-  await addToCartBackend({
-    productId: product._id,
-    variantSku: activeSize.sku,
-    qty,
-  });
+    await addToCartBackend({
+      productId: product._id,
+      variantSku: activeSize.sku,
+      qty,
+    });
 
-  Swal.fire("Added", "Product added to cart", "success");
-};
-
-
+    Swal.fire("Added", "Product added to cart", "success");
+  };
 
   /* ================= LOADING ================= */
   if (loading) {
@@ -136,22 +139,43 @@ const handleAddToCart = async () => {
       <div className="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-2 gap-10">
         {/* ================= IMAGES ================= */}
         <div className="lg:sticky lg:top-24 self-start">
-          <div className="flex flex-col lg:flex-row gap-4">
-            {/* THUMBNAILS */}
-            <div
-              className="order-2 lg:order-1 flex lg:flex-col gap-3
-               overflow-x-auto lg:overflow-visible"
+          {/* ================= MOBILE VIEW ================= */}
+          <div className="lg:hidden">
+            {/* MAIN IMAGE CAROUSEL */}
+            <Swiper
+              modules={[Pagination]}
+              pagination={{ clickable: true }}
+              onSwiper={(swiper) => (swiperRef.current = swiper)}
+              onSlideChange={(swiper) =>
+                setSelectedImg(activeColor.images[swiper.activeIndex]?.url)
+              }
+              className="rounded-2xl overflow-hidden"
             >
+              {activeColor?.images?.map((img, i) => (
+                <SwiperSlide key={i}>
+                  <img
+                    src={img.url}
+                    alt={product.name}
+                    className="w-full h-[420px] object-contain bg-white"
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+
+            {/* THUMBNAILS */}
+            <div className="flex gap-3 mt-4 overflow-x-auto pb-2">
               {activeColor?.images?.map((img, i) => (
                 <button
                   key={i}
-                  onClick={() => setSelectedImg(img.url)}
-                  className={`flex-shrink-0 w-16 h-16 lg:w-20 lg:h-20
-          rounded-lg border overflow-hidden transition
+                  onClick={() => {
+                    setSelectedImg(img.url);
+                    swiperRef.current?.slideTo(i); // 🔥 THIS IS THE FIX
+                  }}
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg border overflow-hidden
           ${
             selectedImg === img.url
               ? "border-indigo-600 ring-1 ring-indigo-600"
-              : "border-slate-300 hover:border-slate-400"
+              : "border-slate-300"
           }`}
                 >
                   <img
@@ -162,12 +186,35 @@ const handleAddToCart = async () => {
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* MAIN IMAGE */}
+          {/* ================= DESKTOP VIEW ================= */}
+          <div className="hidden lg:flex gap-4">
+            {/* THUMBNAILS */}
+            <div className="flex flex-col gap-3">
+              {activeColor?.images?.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={() => setSelectedImg(img.url)}
+                  className={`w-20 h-20 rounded-lg border overflow-hidden transition
+            ${
+              selectedImg === img.url
+                ? "border-indigo-600 ring-1 ring-indigo-600"
+                : "border-slate-300 hover:border-slate-400"
+            }`}
+                >
+                  <img
+                    src={img.url}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+
+            {/* MAIN IMAGE WITH ZOOM */}
             <div
-              className="order-1 lg:order-2 relative flex-1
-               rounded-2xl border overflow-hidden
-               bg-slate-50"
+              className="relative flex-1 rounded-2xl border overflow-hidden bg-slate-50"
               onMouseMove={(e) => {
                 const { left, top, width, height } =
                   e.currentTarget.getBoundingClientRect();
@@ -185,8 +232,7 @@ const handleAddToCart = async () => {
               <img
                 src={selectedImg}
                 alt={product.name}
-                className="w-full h-[300px] sm:h-[360px] lg:h-[440px]
-                 object-cover transition-transform duration-200"
+                className="w-full h-[420px] object-contain bg-white transition-transform duration-200"
                 style={zoomStyle}
               />
             </div>
@@ -379,36 +425,35 @@ const handleAddToCart = async () => {
             <button
               disabled={!activeSize || stock === 0}
               onClick={async () => {
-  if (!activeSize) return;
+                if (!activeSize) return;
 
-  const token = localStorage.getItem("token");
+                const token = localStorage.getItem("token");
 
-  // 🟡 GUEST BUY NOW
-  if (!token) {
-    navigate("/checkout", {
-      state: {
-        guestBuyNow: true,
-        item: {
-          productId: product._id,
-          variantSku: activeSize.sku,
-          qty,
-          price: activeSize.price,
-        },
-      },
-    });
-    return;
-  }
+                // 🟡 GUEST BUY NOW
+                if (!token) {
+                  navigate("/checkout", {
+                    state: {
+                      guestBuyNow: true,
+                      item: {
+                        productId: product._id,
+                        variantSku: activeSize.sku,
+                        qty,
+                        price: activeSize.price,
+                      },
+                    },
+                  });
+                  return;
+                }
 
-  // 🟢 AUTH BUY NOW
-  await addToCartBackend({
-    productId: product._id,
-    variantSku: activeSize.sku,
-    qty,
-  });
+                // 🟢 AUTH BUY NOW
+                await addToCartBackend({
+                  productId: product._id,
+                  variantSku: activeSize.sku,
+                  qty,
+                });
 
-  navigate("/checkout", { state: { buyNow: true } });
-}}
-
+                navigate("/checkout", { state: { buyNow: true } });
+              }}
               className="w-full bg-blue-600 text-white py-3 rounded-lg
       text-sm font-semibold hover:bg-blue-700 transition
       disabled:opacity-50 disabled:cursor-not-allowed"
@@ -481,6 +526,11 @@ const handleAddToCart = async () => {
 
             {product.shipping?.codAvailable && <span>COD available</span>}
           </div>
+        </div>
+      </div>
+      <div className="border-t mt-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-0 pb-8">
+          <SimilarProducts slug={product.slug} />
         </div>
       </div>
 

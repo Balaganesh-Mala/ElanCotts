@@ -22,8 +22,8 @@ const auth = {
 };
 
 /* ================= COMPONENT ================= */
-const HeroManager = () => {
-  const [slides, setSlides] = useState([]);
+const FixedBannerManager = () => {
+  const [banners, setBanners] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [formOpen, setFormOpen] = useState(false);
@@ -39,26 +39,26 @@ const HeroManager = () => {
     buttonText: "",
     linkType: "INTERNAL",
     link: "",
-    order: 1,
+    order: 10,
     isActive: true,
     image: null,
   });
 
-  /* ================= LOAD HERO SLIDES ================= */
-  const fetchSlides = async () => {
+  /* ================= LOAD FIXED BANNERS ================= */
+  const fetchBanners = async () => {
     try {
       setLoading(true);
       const res = await api.get("/hero");
-      setSlides(res.data.hero || []);
+      setBanners(res.data.fixedBanners || []);
     } catch {
-      Swal.fire("Error", "Failed to load hero slides ❌", "error");
+      Swal.fire("Error", "Failed to load fixed banners ❌", "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSlides();
+    fetchBanners();
   }, []);
 
   /* ================= OPEN FORM ================= */
@@ -70,28 +70,29 @@ const HeroManager = () => {
       buttonText: "",
       linkType: "INTERNAL",
       link: "",
-      order: 1,
+      order: 10,
       isActive: true,
       image: null,
     });
+
     if (imagePreview) URL.revokeObjectURL(imagePreview);
     setImagePreview(null);
     setFormOpen(true);
   };
 
-  const openEdit = (s) => {
-    setEditId(s._id);
+  const openEdit = (b) => {
+    setEditId(b._id);
     setForm({
-      title: s.title,
-      subtitle: s.subtitle,
-      buttonText: s.buttonText,
-      linkType: s.linkType,
-      link: s.link,
-      order: s.order,
-      isActive: s.isActive,
+      title: b.title,
+      subtitle: b.subtitle,
+      buttonText: b.buttonText,
+      linkType: b.linkType,
+      link: b.link,
+      order: b.order,
+      isActive: b.isActive,
       image: null,
     });
-    setImagePreview(s.image?.url || null);
+    setImagePreview(b.image?.url || null);
     setFormOpen(true);
   };
 
@@ -117,8 +118,12 @@ const HeroManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (form.order < 1 || form.order > 9) {
-      return Swal.fire("Invalid Order", "Hero order must be 1–9", "warning");
+    if (form.order < 10 || form.order > 14) {
+      return Swal.fire(
+        "Invalid Order",
+        "Fixed Banner order must be between 10–14",
+        "warning"
+      );
     }
 
     try {
@@ -139,9 +144,9 @@ const HeroManager = () => {
         ? await api.put(`/hero/${editId}`, fd, auth)
         : await api.post("/hero/create", fd, auth);
 
-      Swal.fire("Success", "Hero slide saved ✅", "success");
+      Swal.fire("Success", "Fixed banner saved ✅", "success");
       setFormOpen(false);
-      fetchSlides();
+      fetchBanners();
     } catch (err) {
       Swal.fire(
         "Error",
@@ -156,7 +161,7 @@ const HeroManager = () => {
   /* ================= DELETE ================= */
   const handleDelete = async (id) => {
     const r = await Swal.fire({
-      title: "Delete hero slide?",
+      title: "Delete fixed banner?",
       icon: "warning",
       showCancelButton: true,
       confirmButtonText: "Yes, delete",
@@ -165,8 +170,8 @@ const HeroManager = () => {
     if (!r.isConfirmed) return;
 
     await api.delete(`/hero/${id}`, auth);
-    fetchSlides();
-    Swal.fire("Deleted", "Hero slide removed ✅", "success");
+    fetchBanners();
+    Swal.fire("Deleted", "Fixed banner removed ✅", "success");
   };
 
   /* ================= UI ================= */
@@ -174,9 +179,9 @@ const HeroManager = () => {
     <div className="max-w-6xl mx-auto p-6 space-y-6">
       {/* HEADER */}
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Hero Carousel Manager</h1>
+        <h1 className="text-2xl font-bold">Fixed Banner Manager</h1>
         <Button onClick={openAdd} className="flex gap-2">
-          <ImagePlus size={16} /> Add Hero Slide
+          <ImagePlus size={16} /> Add Fixed Banner
         </Button>
       </div>
 
@@ -188,7 +193,7 @@ const HeroManager = () => {
       ) : (
         <Card>
   <CardHeader>
-    <CardTitle>Hero Slides (Order 1–9)</CardTitle>
+    <CardTitle>Fixed Banners (Order 10–14)</CardTitle>
   </CardHeader>
 
   <CardContent>
@@ -207,35 +212,30 @@ const HeroManager = () => {
         </thead>
 
         <tbody>
-          {slides.map((s) => (
-            <tr
-              key={s._id}
-              className="border-b hover:bg-slate-50 align-top"
-            >
+          {banners.map((b) => (
+            <tr key={b._id} className="border-b hover:bg-slate-50 align-top">
               {/* IMAGE */}
               <td className="p-3">
                 <img
-                  src={s.image?.url}
-                  alt={s.title}
+                  src={b.image?.url}
+                  alt={b.title}
                   className="h-12 w-20 rounded-md object-cover border"
                 />
               </td>
 
               {/* TITLE + SUBTITLE */}
               <td className="p-3">
-                <p className="font-semibold text-slate-800">
-                  {s.title}
-                </p>
+                <p className="font-semibold text-slate-800">{b.title}</p>
                 <p className="text-xs text-slate-500 line-clamp-2">
-                  {s.subtitle}
+                  {b.subtitle}
                 </p>
               </td>
 
               {/* CTA */}
               <td className="p-3">
-                {s.buttonText ? (
-                  <span className="inline-block text-xs font-medium px-3 py-1 rounded-full bg-indigo-100 text-indigo-700">
-                    {s.buttonText}
+                {b.buttonText ? (
+                  <span className="inline-block text-xs font-medium px-3 py-1 rounded-full bg-blue-100 text-blue-700">
+                    {b.buttonText}
                   </span>
                 ) : (
                   <span className="text-xs text-slate-400">—</span>
@@ -245,28 +245,28 @@ const HeroManager = () => {
               {/* LINK */}
               <td className="p-3 max-w-[220px]">
                 <p className="text-xs font-semibold text-slate-600">
-                  {s.linkType}
+                  {b.linkType}
                 </p>
                 <p className="text-xs text-slate-500 truncate">
-                  {s.link || "—"}
+                  {b.link || "—"}
                 </p>
               </td>
 
               {/* ORDER */}
               <td className="p-3 font-medium text-slate-700">
-                {s.order}
+                {b.order}
               </td>
 
               {/* ACTIVE */}
               <td className="p-3">
                 <Switch
-                  checked={s.isActive}
+                  checked={b.isActive}
                   onCheckedChange={(v) => {
                     const fd = new FormData();
                     fd.append("isActive", v);
                     api
-                      .put(`/hero/${s._id}`, fd, auth)
-                      .then(fetchSlides);
+                      .put(`/hero/${b._id}`, fd, auth)
+                      .then(fetchBanners);
                   }}
                 />
               </td>
@@ -274,13 +274,13 @@ const HeroManager = () => {
               {/* ACTIONS */}
               <td className="p-3">
                 <div className="flex justify-center gap-2">
-                  <Button size="sm" onClick={() => openEdit(s)}>
+                  <Button size="sm" onClick={() => openEdit(b)}>
                     Edit
                   </Button>
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={() => handleDelete(s._id)}
+                    onClick={() => handleDelete(b._id)}
                   >
                     Delete
                   </Button>
@@ -289,10 +289,10 @@ const HeroManager = () => {
             </tr>
           ))}
 
-          {slides.length === 0 && (
+          {banners.length === 0 && (
             <tr>
               <td colSpan={7} className="text-center py-6 text-slate-500">
-                No hero slides found
+                No fixed banners found
               </td>
             </tr>
           )}
@@ -326,7 +326,9 @@ const HeroManager = () => {
             <Input
               placeholder="Button Text"
               value={form.buttonText}
-              onChange={(e) => setForm({ ...form, buttonText: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, buttonText: e.target.value })
+              }
               required
             />
 
@@ -358,8 +360,8 @@ const HeroManager = () => {
 
             <Input
               type="number"
-              min={1}
-              max={9}
+              min={10}
+              max={14}
               value={form.order}
               onChange={(e) =>
                 setForm({ ...form, order: Number(e.target.value) })
@@ -373,7 +375,10 @@ const HeroManager = () => {
             />
 
             {imagePreview && (
-              <img src={imagePreview} className="h-32 rounded" />
+              <img
+                src={imagePreview}
+                className="h-32 rounded object-cover"
+              />
             )}
 
             <div className="flex justify-end gap-2">
@@ -395,4 +400,4 @@ const HeroManager = () => {
   );
 };
 
-export default HeroManager;
+export default FixedBannerManager;

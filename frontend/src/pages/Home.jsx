@@ -6,6 +6,8 @@ import CategorySection from "../components/sections/CategorySection";
 import BestSeller from "../components/sections/BestSeller";
 import RecentlyViewed from "../components/sections/RecentlyViewed";
 import FixedBanner from "../components/sections/FixedBanner";
+import InstagramVideos from "../components/sections/InstagramVideos";
+import CustomerReviews from "../components/sections/CustomerReviews";
 
 
 const Home = () => {
@@ -18,6 +20,8 @@ const Home = () => {
       <FixedBanner/>
       <FeaturedCarousel/>
       <RecentlyViewed/>
+      <InstagramVideos/>
+      <CustomerReviews/>
     </div>
   );
 };

@@ -14,8 +14,8 @@ import { Switch } from "../../components/ui/switch";
 
 /* ================= HELPERS ================= */
 const getMinPrice = (variants = []) => {
-  const prices = variants.flatMap((v) =>
-    v.sizes?.map((s) => Number(s.price) || 0) || []
+  const prices = variants.flatMap(
+    (v) => v.sizes?.map((s) => Number(s.price) || 0) || []
   );
   return prices.length ? Math.min(...prices) : 0;
 };
@@ -58,33 +58,30 @@ const ProductManager = () => {
 
   /* ================= TOGGLE HANDLER (PUT) ================= */
   const handleToggle = async (productId, field, value) => {
-  try {
-    const fd = new FormData();
+    try {
+      const fd = new FormData();
 
-    fd.append(
-      "productData",
-      JSON.stringify({
-        [field]: value,
-      })
-    );
+      fd.append(
+        "productData",
+        JSON.stringify({
+          [field]: value,
+        })
+      );
 
-    await api.put(`/products/${productId}`, fd, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
+      await api.put(`/products/${productId}`, fd, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
 
-    setProducts((prev) =>
-      prev.map((p) =>
-        p._id === productId ? { ...p, [field]: value } : p
-      )
-    );
-  } catch (err) {
-    console.error(err);
-    Swal.fire("Error", `Failed to update ${field}`, "error");
-  }
-};
-
+      setProducts((prev) =>
+        prev.map((p) => (p._id === productId ? { ...p, [field]: value } : p))
+      );
+    } catch (err) {
+      console.error(err);
+      Swal.fire("Error", `Failed to update ${field}`, "error");
+    }
+  };
 
   /* ================= ACTIONS ================= */
   const handleEdit = (id) => {
@@ -93,11 +90,11 @@ const ProductManager = () => {
 
   const handleDelete = async (id) => {
     const r = await Swal.fire({
-      title: "Delete product?",
-      text: "This action cannot be undone",
+      title: "Deactivate product?",
+      text: "Product will be hidden but not deleted",
       icon: "warning",
       showCancelButton: true,
-      confirmButtonText: "Yes, delete",
+      confirmButtonText: "Yes, deactivate",
     });
 
     if (!r.isConfirmed) return;
@@ -109,8 +106,12 @@ const ProductManager = () => {
         },
       });
 
-      setProducts((prev) => prev.filter((p) => p._id !== id));
-      Swal.fire("Deleted", "Product deleted successfully", "success");
+      // ✅ UPDATE STATE, DON'T REMOVE
+      setProducts((prev) =>
+        prev.map((p) => (p._id === id ? { ...p, isActive: false } : p))
+      );
+
+      Swal.fire("Deactivated", "Product hidden successfully", "success");
     } catch {
       Swal.fire("Error", "Delete failed", "error");
     }
@@ -121,9 +122,7 @@ const ProductManager = () => {
     <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-6">
       {/* HEADER */}
       <div className="flex justify-between items-center">
-        <h1 className="text-xl md:text-2xl font-bold">
-          Admin Product Manager
-        </h1>
+        <h1 className="text-xl md:text-2xl font-bold">Admin Product Manager</h1>
 
         <Button onClick={() => navigate("/admin/products/add")}>
           + Add Product
@@ -187,10 +186,9 @@ const ProductManager = () => {
                       ].map((field) => (
                         <td key={field} className="p-3">
                           <Switch
-                            checked={p[field]}
+                            checked={p.isActive}
                             onCheckedChange={(val) =>
-                              handleToggle(p._id, field, val)
-
+                              handleToggle(p._id, "isActive", val)
                             }
                           />
                         </td>
@@ -210,7 +208,7 @@ const ProductManager = () => {
                           variant="destructive"
                           onClick={() => handleDelete(p._id)}
                         >
-                          Delete
+                          Deactivate
                         </Button>
                       </td>
                     </tr>

@@ -3,101 +3,200 @@ import HeroSlide from "../models/hero.model.js";
 import cloudinary from "../config/cloudinary.js";
 import sharp from "sharp";
 
-//
-// ➕ Create slide (Admin only)
-//
+/* =====================================================
+   🧠 HELPERS
+===================================================== */
+
+const getSlideType = (order) => {
+  if (order >= 1 && order <= 9) return "HERO";
+  if (order >= 10 && order <= 14) return "FIXED_BANNER";
+  return "UNKNOWN";
+};
+
+const uploadImageToCloudinary = async (buffer) => {
+  const optimized = await sharp(buffer)
+    .resize(1200, 500, { fit: "cover" })
+    .toFormat("webp", { quality: 80 })
+    .toBuffer();
+
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader
+      .upload_stream({ folder: "ecommerce-hero-banners" }, (err, result) => {
+        if (err) reject(err);
+        else
+          resolve({
+            public_id: result.public_id,
+            url: result.secure_url,
+          });
+      })
+      .end(optimized);
+  });
+};
+
+/* =====================================================
+   ➕ CREATE SLIDE (ADMIN)
+===================================================== */
 export const createHeroSlide = asyncHandler(async (req, res) => {
-  const { title, subtitle, buttonText, order } = req.body;
+  const { title, subtitle, buttonText, order, link = "", linkType } = req.body;
 
-  if (!title || !subtitle || !buttonText) {
-    return res.status(400).json({ success:false, message:"All fields required ❌" });
-  }
-
-  let imageData = {};
-  if (req.file) {
-    const optimized = await sharp(req.file.buffer)
-      .resize(1200) // banner width
-      .toFormat("webp", { quality: 80 })
-      .toBuffer();
-
-    const uploadRes = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: "ecommerce-hero-banners", resource_type: "image" },
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
-      ).end(optimized);
+  if (!title || !subtitle || !buttonText || order === undefined) {
+    return res.status(400).json({
+      success: false,
+      message: "Title, subtitle, button text & order required ❌",
     });
-
-    imageData = { public_id: uploadRes.public_id, url: uploadRes.secure_url };
   }
 
-  const slide = await HeroSlide.create({ title, subtitle, buttonText, image: imageData, order });
+  const numericOrder = Number(order);
+  const slideType = getSlideType(numericOrder);
 
-  res.status(201).json({ success:true, message:"Slide added ✅", slide });
+  if (slideType === "UNKNOWN") {
+    return res.status(400).json({
+      success: false,
+      message: "Order must be between 1–14 ❌",
+    });
+  }
+
+  const exists = await HeroSlide.findOne({ order: numericOrder });
+  if (exists) {
+    return res.status(400).json({
+      success: false,
+      message: "Slide order already exists ❌",
+    });
+  }
+
+  const safeLinkType = ["INTERNAL", "EXTERNAL", "ANCHOR"].includes(linkType)
+    ? linkType
+    : "INTERNAL";
+
+  let image = null;
+  if (req.file) {
+    image = await uploadImageToCloudinary(req.file.buffer);
+  }
+
+  const slide = await HeroSlide.create({
+    title,
+    subtitle,
+    buttonText,
+    link,
+    linkType: safeLinkType,
+    order: numericOrder,
+    type: slideType,
+    image,
+  });
+
+  res.status(201).json({
+    success: true,
+    message: "Slide created ✅",
+    slide,
+  });
 });
 
-//
-// 📦 Get slides (Public)
-//
+
+/* =====================================================
+   📦 GET SLIDES (PUBLIC)
+===================================================== */
 export const getHeroSlides = asyncHandler(async (req, res) => {
   const slides = await HeroSlide.find({ isActive: true }).sort({ order: 1 });
-  res.status(200).json({ success:true, slides });
+
+  res.status(200).json({
+    success: true,
+    hero: slides.filter((s) => s.type === "HERO"),
+    fixedBanners: slides.filter((s) => s.type === "FIXED_BANNER"),
+  });
 });
 
-//
-// ✏ Update slide (Admin only)
-//
+/* =====================================================
+   ✏ UPDATE SLIDE (ADMIN)
+===================================================== */
 export const updateHeroSlide = asyncHandler(async (req, res) => {
   const slide = await HeroSlide.findById(req.params.id);
   if (!slide) {
-    return res.status(404).json({ success:false, message:"Slide not found ❌" });
+    return res.status(404).json({
+      success: false,
+      message: "Slide not found ❌",
+    });
   }
 
-  const { title, subtitle, buttonText, order, isActive } = req.body;
+  const { title, subtitle, buttonText, order, isActive, link, linkType } =
+    req.body;
 
-  let imageData = slide.image;
-  if (req.file) {
-    const optimized = await sharp(req.file.buffer)
-      .resize(1200)
-      .toFormat("webp", { quality: 80 })
-      .toBuffer();
+  if (order !== undefined) {
+    const numericOrder = Number(order);
+    const slideType = getSlideType(numericOrder);
 
-    const uploadRes = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        { folder: "ecommerce-hero-banners", resource_type: "image" },
-        (err, result) => {
-          if (err) reject(err);
-          else resolve(result);
-        }
-      ).end(optimized);
+    if (slideType === "UNKNOWN") {
+      return res.status(400).json({
+        success: false,
+        message: "Order must be between 1–14 ❌",
+      });
+    }
+
+    const exists = await HeroSlide.findOne({
+      order: numericOrder,
+      _id: { $ne: slide._id },
     });
 
-    imageData = { public_id: uploadRes.public_id, url: uploadRes.secure_url };
+    if (exists) {
+      return res.status(400).json({
+        success: false,
+        message: "Order already in use ❌",
+      });
+    }
+
+    slide.order = numericOrder;
+    slide.type = slideType;
   }
+
+  if (req.file) {
+    if (slide.image?.public_id) {
+      await cloudinary.uploader.destroy(slide.image.public_id);
+    }
+    slide.image = await uploadImageToCloudinary(req.file.buffer);
+  }
+
+  const safeLinkType = ["INTERNAL", "EXTERNAL", "ANCHOR"].includes(linkType)
+    ? linkType
+    : slide.linkType;
 
   slide.title = title ?? slide.title;
   slide.subtitle = subtitle ?? slide.subtitle;
   slide.buttonText = buttonText ?? slide.buttonText;
-  slide.order = order ?? slide.order;
-  slide.image = imageData;
-  slide.isActive = isActive ?? slide.isActive;
+  slide.link = link ?? slide.link;
+  slide.linkType = safeLinkType;
 
-  if (isActive === false) slide.isActive = false;
+  if (isActive !== undefined) {
+    slide.isActive = isActive === "true" || isActive === true;
+  }
 
   await slide.save();
 
-  res.status(200).json({ success:true, message:"Slide updated ✅", slide });
+  res.json({
+    success: true,
+    message: "Slide updated ✅",
+    slide,
+  });
 });
 
-//
-// ❌ Delete slide (Admin only)
-//
+
+/* =====================================================
+   ❌ DELETE SLIDE (ADMIN)
+===================================================== */
 export const deleteHeroSlide = asyncHandler(async (req, res) => {
   const slide = await HeroSlide.findById(req.params.id);
-  if (!slide) return res.status(404).json({ success:false, message:"Slide not found ❌" });
+  if (!slide) {
+    return res
+      .status(404)
+      .json({ success: false, message: "Slide not found ❌" });
+  }
+
+  if (slide.image?.public_id) {
+    await cloudinary.uploader.destroy(slide.image.public_id);
+  }
 
   await slide.deleteOne();
-  res.status(200).json({ success:true, message:"Slide removed ✅" });
+
+  res.status(200).json({
+    success: true,
+    message: "Slide deleted ✅",
+  });
 });

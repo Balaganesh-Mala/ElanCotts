@@ -47,3 +47,27 @@ export const uploadMultipleToCloudinary = async (
 
   return results;
 };
+
+
+export const uploadVideoToCloudinary = (buffer, folder = "videos") => {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: "video",
+        timeout: 120000,
+      },
+      (error, result) => {
+        if (error) return reject(error);
+
+        resolve({
+          public_id: result.public_id,
+          url: result.secure_url,
+          duration: result.duration,
+        });
+      }
+    );
+
+    streamifier.createReadStream(buffer).pipe(stream);
+  });
+};

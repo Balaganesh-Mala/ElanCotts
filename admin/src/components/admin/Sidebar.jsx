@@ -56,6 +56,7 @@ const Sidebar = ({ open, setOpen }) => {
     { label: "Orders", icon: <ShoppingCart size={18} />, path: "/admin/orders" },
     { label: "Users", icon: <Users size={18} />, path: "/admin/users" },
     {label: "Banner",icon: <Flag size={18} />, path:"/admin/banner" },
+    {label: "Fixed Banner",icon: <Flag size={18} />, path:"/admin/fixedbanner" },
     { label: "Settings", icon: <Settings size={18} />, path: "/admin/settings" },
     
   ];

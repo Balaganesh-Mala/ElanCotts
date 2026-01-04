@@ -201,8 +201,16 @@ const AdminAddProduct = () => {
   };
 
   const handleImages = (vIdx, files) => {
-    const variants = [...form.variants];
+    const valid = Array.from(files).every((f) =>
+      ["image/jpeg", "image/png", "image/webp"].includes(f.type)
+    );
 
+    if (!valid) {
+      Swal.fire("Invalid file", "Only JPG, PNG, WEBP allowed", "error");
+      return;
+    }
+
+    const variants = [...form.variants];
     variants[vIdx].images = Array.from(files).map((file) => ({
       file,
       preview: URL.createObjectURL(file),
@@ -213,9 +221,29 @@ const AdminAddProduct = () => {
 
   const removeVariantImage = (vIdx, imgIdx) => {
     const variants = [...form.variants];
+    URL.revokeObjectURL(variants[vIdx].images[imgIdx].preview);
     variants[vIdx].images.splice(imgIdx, 1);
     setForm({ ...form, variants });
   };
+
+  const moveVariantImage = (vIdx, imgIdx, direction) => {
+  const variants = [...form.variants];
+  const images = [...variants[vIdx].images];
+
+  const target =
+    direction === "LEFT" ? imgIdx - 1 : imgIdx + 1;
+
+  if (target < 0 || target >= images.length) return;
+
+  // swap images
+  [images[imgIdx], images[target]] = [
+    images[target],
+    images[imgIdx],
+  ];
+
+  variants[vIdx].images = images;
+  setForm({ ...form, variants });
+};
 
   /* ================= SUBMIT ================= */
 
@@ -276,9 +304,9 @@ const AdminAddProduct = () => {
       );
 
       form.variants.forEach((v, i) => {
-        Array.from(v.images || []).forEach((file) =>
-          fd.append(`variantImages_${i}`, file)
-        );
+        v.images.forEach((img) => {
+          fd.append(`variantImages_${i}`, img.file);
+        });
       });
 
       await api.post("/products", fd, {
@@ -455,7 +483,9 @@ const AdminAddProduct = () => {
                 {/* DESCRIPTIONS */}
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-slate-600">Short Description *</Label>
+                    <Label className="text-slate-600">
+                      Short Description *
+                    </Label>
                     <textarea
                       className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm
                      focus:outline-none focus:ring-2 focus:ring-blue-600"
@@ -610,9 +640,19 @@ const AdminAddProduct = () => {
                             type="file"
                             multiple
                             accept="image/*"
-                            className="hidden"
-                            onChange={(e) => handleImages(vIdx, e.target.files)}
+                            onChange={(e) => {
+                              if (e.target.files.length > 7) {
+                                Swal.fire(
+                                  "Limit",
+                                  "Max 7 images per variant",
+                                  "warning"
+                                );
+                                return;
+                              }
+                              handleImages(vIdx, e.target.files);
+                            }}
                           />
+
                           <div className="text-center text-sm text-blue-600 font-medium">
                             Click or drag images here
                             <div className="text-xs text-slate-400 mt-1">
@@ -624,38 +664,67 @@ const AdminAddProduct = () => {
                         {/* IMAGE PREVIEW GRID */}
                         {v.images?.length > 0 && (
                           <div className="grid grid-cols-3 md:grid-cols-5 gap-3 mt-4">
-                            {v.images.map((img, imgIdx) => (
-                              <div
-                                key={imgIdx}
-                                className="relative group rounded-lg border overflow-hidden"
-                              >
-                                {/* IMAGE */}
-                                <img
-                                  src={img.preview}
-                                  alt="preview"
-                                  className="w-full h-24 object-cover"
-                                />
+  {v.images.map((img, imgIdx) => (
+    <div
+      key={imgIdx}
+      className="relative group rounded-lg border overflow-hidden"
+    >
+      {/* IMAGE */}
+      <img
+        src={img.preview}
+        alt="preview"
+        className="w-full h-24 object-cover"
+      />
 
-                                {/* PRIMARY BADGE */}
-                                {imgIdx === 0 && (
-                                  <span className="absolute top-1 left-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded">
-                                    PRIMARY
-                                  </span>
-                                )}
+      {/* ORDER BADGE */}
+      <span className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded">
+        #{imgIdx + 1}
+      </span>
 
-                                {/* REMOVE */}
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    removeVariantImage(vIdx, imgIdx)
-                                  }
-                                  className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-0.5 opacity-0 group-hover:opacity-100"
-                                >
-                                  ✕
-                                </button>
-                              </div>
-                            ))}
-                          </div>
+      {/* PRIMARY LABEL */}
+      {imgIdx === 0 && (
+        <span className="absolute bottom-1 left-1 bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded">
+          PRIMARY
+        </span>
+      )}
+
+      {/* MOVE CONTROLS */}
+      <div className="absolute bottom-1 right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition">
+        <button
+          type="button"
+          disabled={imgIdx === 0}
+          onClick={() =>
+            moveVariantImage(vIdx, imgIdx, "LEFT")
+          }
+          className="bg-white text-xs px-2 py-1 rounded shadow disabled:opacity-40"
+        >
+          ⬅️
+        </button>
+
+        <button
+          type="button"
+          disabled={imgIdx === v.images.length - 1}
+          onClick={() =>
+            moveVariantImage(vIdx, imgIdx, "RIGHT")
+          }
+          className="bg-white text-xs px-2 py-1 rounded shadow disabled:opacity-40"
+        >
+          ➡️
+        </button>
+      </div>
+
+      {/* REMOVE */}
+      <button
+        type="button"
+        onClick={() => removeVariantImage(vIdx, imgIdx)}
+        className="absolute top-1 right-1 bg-black/60 text-white text-xs rounded-full px-2 py-0.5 opacity-0 group-hover:opacity-100"
+      >
+        ✕
+      </button>
+    </div>
+  ))}
+</div>
+
                         )}
                       </div>
 

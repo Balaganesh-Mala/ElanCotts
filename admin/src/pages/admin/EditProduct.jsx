@@ -10,6 +10,18 @@ import { Label } from "../../components/ui/label";
 import { Switch } from "../../components/ui/switch";
 import { Loader2 } from "lucide-react";
 
+import {
+  DndContext,
+  closestCenter,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+
+
 /* ================= COMPONENT ================= */
 
 const EditProduct = () => {
@@ -28,12 +40,13 @@ const EditProduct = () => {
   /* ================= LOAD CATEGORIES ================= */
 
   useEffect(() => {
-    (async () => {
+    const loadCategories = async () => {
       const res = await api.get("/categories");
       const all = res.data.categories || [];
       setCategories(all);
       setParentCategories(all.filter((c) => !c.parent));
-    })();
+    };
+    loadCategories();
   }, []);
 
   /* ================= LOAD PRODUCT ================= */
@@ -41,9 +54,10 @@ const EditProduct = () => {
   useEffect(() => {
     if (!categories.length) return;
 
-    (async () => {
+    const loadProduct = async () => {
       try {
         setLoading(true);
+
         const res = await api.get(`/products/admin/${id}`, {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -53,7 +67,7 @@ const EditProduct = () => {
         const p = res.data.product;
 
         const categoryId = p.category?._id || p.category;
-        const subCategoryId = p.subCategory?._id || p.subCategory || "";
+        const subCategoryId = p.subCategory?._id || "";
 
         setChildCategories(
           categories.filter((c) => String(c.parent) === String(categoryId))
@@ -69,32 +83,38 @@ const EditProduct = () => {
           shortDescription: p.shortDescription,
           longDescription: p.longDescription,
           attributes: p.attributes || {},
+
           variants: p.variants.map((v) => ({
-            ...v,
+            color: v.color,
+            sizes: v.sizes,
             images: v.images.map((img) => ({
               url: img.url,
               isExisting: true,
             })),
           })),
+
           isFeatured: p.isFeatured,
           isBestSeller: p.isBestSeller,
           isNewArrival: p.isNewArrival,
           isActive: p.isActive,
           returnPolicy: p.returnPolicy,
           shipping: p.shipping,
+
           seo: {
             title: p.seo?.title || "",
             description: p.seo?.description || "",
             keywords: p.seo?.keywords?.join(", ") || "",
           },
         });
-      } catch {
+      } catch (err) {
         Swal.fire("Error", "Failed to load product", "error");
         navigate("/admin/products");
       } finally {
         setLoading(false);
       }
-    })();
+    };
+
+    loadProduct();
   }, [id, categories]);
 
   /* ================= HANDLERS ================= */
@@ -115,6 +135,7 @@ const EditProduct = () => {
 
   const handleVariantImageAdd = (vIdx, files) => {
     const variants = [...form.variants];
+
     const newImages = Array.from(files).map((file) => ({
       file,
       preview: URL.createObjectURL(file),
@@ -127,6 +148,10 @@ const EditProduct = () => {
 
   const handleVariantImageRemove = (vIdx, imgIdx) => {
     const variants = [...form.variants];
+    const img = variants[vIdx].images[imgIdx];
+
+    if (img.preview) URL.revokeObjectURL(img.preview);
+
     variants[vIdx].images.splice(imgIdx, 1);
     setForm({ ...form, variants });
   };
@@ -136,6 +161,49 @@ const EditProduct = () => {
     variants[vIdx].sizes[sIdx][field] = value;
     setForm({ ...form, variants });
   };
+
+ const moveImage = (vIdx, oldIndex, newIndex) => {
+  const variants = [...form.variants];
+  const images = [...variants[vIdx].images];
+
+  const [moved] = images.splice(oldIndex, 1);
+  images.splice(newIndex, 0, moved);
+
+  variants[vIdx].images = images;
+  setForm({ ...form, variants });
+};
+
+const makePrimaryImage = (vIdx, imgIdx) => {
+  if (imgIdx === 0) return;
+
+  const variants = [...form.variants];
+  const images = [...variants[vIdx].images];
+
+  const [selected] = images.splice(imgIdx, 1);
+  images.unshift(selected);
+
+  variants[vIdx].images = images;
+  setForm({ ...form, variants });
+};
+
+const moveImageByStep = (vIdx, imgIdx, direction) => {
+  const variants = [...form.variants];
+  const images = [...variants[vIdx].images];
+
+  const targetIndex =
+    direction === "LEFT" ? imgIdx - 1 : imgIdx + 1;
+
+  if (targetIndex < 0 || targetIndex >= images.length) return;
+
+  [images[imgIdx], images[targetIndex]] = [
+    images[targetIndex],
+    images[imgIdx],
+  ];
+
+  variants[vIdx].images = images;
+  setForm({ ...form, variants });
+};
+
 
   /* ================= SUBMIT ================= */
 
@@ -175,12 +243,12 @@ const EditProduct = () => {
         },
       });
 
-      Swal.fire("Success", "Product updated successfully", "success");
+      Swal.fire("Success", "Product updated successfully ✅", "success");
       navigate("/admin/products");
     } catch (err) {
       Swal.fire(
         "Error",
-        err.response?.data?.message || "Update failed",
+        err.response?.data?.message || "Update failed ❌",
         "error"
       );
     } finally {
@@ -192,7 +260,7 @@ const EditProduct = () => {
 
   if (loading || !form) {
     return (
-      <div className="h-[50vh] flex items-center justify-center">
+      <div className="h-[60vh] flex items-center justify-center">
         <Loader2 className="animate-spin w-8 h-8" />
       </div>
     );
@@ -210,6 +278,7 @@ const EditProduct = () => {
               value={form.name}
               onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
+
             <Input
               value={form.brand}
               onChange={(e) => setForm({ ...form, brand: e.target.value })}
@@ -262,7 +331,10 @@ const EditProduct = () => {
                   onChange={(e) =>
                     setForm({
                       ...form,
-                      attributes: { ...form.attributes, [k]: e.target.value },
+                      attributes: {
+                        ...form.attributes,
+                        [k]: e.target.value,
+                      },
                     })
                   }
                 />
@@ -271,32 +343,67 @@ const EditProduct = () => {
 
             {/* VARIANTS */}
             {form.variants.map((v, vIdx) => (
-              <div key={vIdx} className="border rounded p-4 space-y-3">
+              <div key={vIdx} className="border rounded-xl p-4 space-y-4">
                 <Input value={v.color} disabled />
 
                 <input
                   type="file"
                   multiple
-                  onChange={(e) => handleVariantImageAdd(vIdx, e.target.files)}
+                  accept="image/*"
+                  onChange={(e) =>
+                    handleVariantImageAdd(vIdx, e.target.files)
+                  }
                 />
 
-                <div className="grid grid-cols-4 gap-2">
-                  {v.images.map((img, i) => (
-                    <div key={i} className="relative">
-                      <img
-                        src={img.preview || img.url}
-                        className="h-24 w-full object-cover rounded"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => handleVariantImageRemove(vIdx, i)}
-                        className="absolute top-1 right-1 bg-black text-white text-xs px-2 rounded"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-                </div>
+                <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+  {v.images.map((img, i) => (
+    <div
+      key={i}
+      className="relative group rounded-lg border overflow-hidden"
+    >
+      <img
+        src={img.preview || img.url}
+        className="h-24 w-full object-cover"
+      />
+
+      {/* IMAGE ORDER BADGE */}
+      <span className="absolute top-1 left-1 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded">
+        #{i + 1}
+      </span>
+
+      {/* MOVE CONTROLS */}
+      <div className="absolute bottom-1 left-1 right-1 flex justify-between opacity-0 group-hover:opacity-100 transition">
+        <button
+          type="button"
+          disabled={i === 0}
+          onClick={() => moveImageByStep(vIdx, i, "LEFT")}
+          className="bg-white text-xs px-2 py-1 rounded shadow disabled:opacity-40"
+        >
+          ⬅️
+        </button>
+
+        <button
+          type="button"
+          disabled={i === v.images.length - 1}
+          onClick={() => moveImageByStep(vIdx, i, "RIGHT")}
+          className="bg-white text-xs px-2 py-1 rounded shadow disabled:opacity-40"
+        >
+          ➡️
+        </button>
+      </div>
+
+      {/* REMOVE */}
+      <button
+        type="button"
+        onClick={() => handleVariantImageRemove(vIdx, i)}
+        className="absolute top-1 right-1 bg-black/60 text-white text-xs px-2 rounded opacity-0 group-hover:opacity-100"
+      >
+        ✕
+      </button>
+    </div>
+  ))}
+</div>
+
 
                 {v.sizes.map((s, sIdx) => (
                   <div key={sIdx} className="grid grid-cols-4 gap-2">
@@ -304,19 +411,34 @@ const EditProduct = () => {
                     <Input
                       value={s.price}
                       onChange={(e) =>
-                        handleSizeChange(vIdx, sIdx, "price", e.target.value)
+                        handleSizeChange(
+                          vIdx,
+                          sIdx,
+                          "price",
+                          e.target.value
+                        )
                       }
                     />
                     <Input
                       value={s.mrp}
                       onChange={(e) =>
-                        handleSizeChange(vIdx, sIdx, "mrp", e.target.value)
+                        handleSizeChange(
+                          vIdx,
+                          sIdx,
+                          "mrp",
+                          e.target.value
+                        )
                       }
                     />
                     <Input
                       value={s.stock}
                       onChange={(e) =>
-                        handleSizeChange(vIdx, sIdx, "stock", e.target.value)
+                        handleSizeChange(
+                          vIdx,
+                          sIdx,
+                          "stock",
+                          e.target.value
+                        )
                       }
                     />
                   </div>
@@ -329,12 +451,14 @@ const EditProduct = () => {
               (f) => (
                 <div
                   key={f}
-                  className="flex justify-between border p-2 rounded"
+                  className="flex justify-between border p-3 rounded"
                 >
                   <Label>{f}</Label>
                   <Switch
                     checked={form[f]}
-                    onCheckedChange={(v) => setForm({ ...form, [f]: v })}
+                    onCheckedChange={(v) =>
+                      setForm({ ...form, [f]: v })
+                    }
                   />
                 </div>
               )

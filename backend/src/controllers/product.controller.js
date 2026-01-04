@@ -162,7 +162,7 @@ export const createProduct = async (req, res) => {
   }
 };
 
-/* ================= GET PRODUCTS BY CATEGORY ================= */
+
 /* ================= GET PRODUCTS BY CATEGORY (SMART) ================= */
 export const getProductsByCategory = async (req, res) => {
   try {
@@ -364,6 +364,54 @@ export const getAllProductsPublic = async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch products",
+    });
+  }
+};
+
+/* ================= GET SIMILAR PRODUCTS ================= */
+export const getSimilarProducts = async (req, res) => {
+  try {
+    const { slug } = req.params;
+
+    // 1️⃣ Get current product
+    const product = await Product.findOne({ slug, isActive: true });
+
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // 2️⃣ If product has NO subCategory → no similar products
+    if (!product.subCategory) {
+      return res.status(200).json({
+        success: true,
+        products: [],
+      });
+    }
+
+    // 3️⃣ Find similar products (same subCategory)
+    const similarProducts = await Product.find({
+      _id: { $ne: product._id }, // exclude current product
+      subCategory: product.subCategory,
+      isActive: true,
+    })
+      .select(
+        "name slug brand variants isFeatured isBestSeller isNewArrival"
+      )
+      .limit(8)
+      .sort({ createdAt: -1 });
+
+    res.status(200).json({
+      success: true,
+      products: similarProducts,
+    });
+  } catch (error) {
+    console.error("Get Similar Products Error:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch similar products",
     });
   }
 };

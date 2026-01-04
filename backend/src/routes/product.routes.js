@@ -9,6 +9,7 @@ import {
   deleteProduct,
   hardDeleteProduct,
   getAllProductsPublic,
+  getSimilarProducts,
   getProductByIdAdmin, // 👈 ADD
 } from "../controllers/product.controller.js";
 
@@ -21,6 +22,9 @@ const router = express.Router();
 /* ===== PUBLIC ===== */
 router.get("/all", getAllProductsPublic);
 router.get("/category/:slug", getProductsByCategory);
+/* ===== SIMILAR PRODUCTS ===== */
+router.get("/similar/:slug", getSimilarProducts);
+
 
 /* ===== ADMIN (MUST BE BEFORE :slug) ===== */
 router.get("/admin/:id", protect, isAdmin, getProductByIdAdmin);
@@ -31,10 +35,10 @@ router.post(
   protect,
   isAdmin,
   upload.fields([
-    { name: "productImages", maxCount: 5 },
-    { name: "variantImages_0", maxCount: 5 },
-    { name: "variantImages_1", maxCount: 5 },
-    { name: "variantImages_2", maxCount: 5 },
+    { name: "productImages", maxCount: 7 },
+    { name: "variantImages_0", maxCount: 7 },
+    { name: "variantImages_1", maxCount: 7 },
+    { name: "variantImages_2", maxCount: 7 },
   ]),
   createProduct
 );
@@ -44,10 +48,10 @@ router.put(
   protect,
   isAdmin,
   upload.fields([
-    { name: "productImages", maxCount: 5 },
-    { name: "variantImages_0", maxCount: 5 },
-    { name: "variantImages_1", maxCount: 5 },
-    { name: "variantImages_2", maxCount: 5 },
+    { name: "productImages", maxCount: 7 },
+    { name: "variantImages_0", maxCount: 7 },
+    { name: "variantImages_1", maxCount: 7 },
+    { name: "variantImages_2", maxCount: 7 },
   ]),
   updateProduct
 );

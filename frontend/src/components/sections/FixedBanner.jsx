@@ -15,22 +15,27 @@ const FixedBanner = () => {
     const loadBanner = async () => {
       try {
         const res = await getHeroSlides();
-        const slides = res.data.slides || [];
 
-        const fixed = slides
-          .filter((s) => s.isActive && s.order < 10 && s.image?.url)
+        // ✅ correct backend key
+        const fixedBanners = res.data.fixedBanners || [];
+
+        // take first active banner (order 10–14 already guaranteed by backend)
+        const active = fixedBanners
+          .filter((b) => b.isActive && b.image?.url)
           .sort((a, b) => a.order - b.order)[0];
 
-        if (!fixed) return;
+        if (!active) return;
 
-        setBanner(fixed);
+        setBanner(active);
 
+        // show after 5s
         showTimer = setTimeout(() => {
           setVisible(true);
 
+          // auto hide after 7s
           hideTimer = setTimeout(() => {
             setVisible(false);
-          }, 7000);
+          }, 15000);
         }, 5000);
       } catch (err) {
         console.error("Fixed banner error:", err);
@@ -45,13 +50,15 @@ const FixedBanner = () => {
     };
   }, []);
 
+  /* ================= CTA ================= */
   const handleCTA = () => {
     if (!banner?.link) return;
 
     if (banner.linkType === "EXTERNAL") {
-      window.open(banner.link, "_blank");
+      window.open(banner.link, "_blank", "noopener,noreferrer");
     } else if (banner.linkType === "ANCHOR") {
-      document.querySelector(banner.link)?.scrollIntoView({ behavior: "smooth" });
+      const el = document.querySelector(banner.link);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
     } else {
       navigate(banner.link);
     }
@@ -62,14 +69,15 @@ const FixedBanner = () => {
   return (
     <div
       className="
-        fixed left-1/2 -translate-x-1/2 z-[999]
+        fixed left-1/2 -translate-x-1/2
+        z-[9998]
         w-[95%] max-w-4xl
         bottom-[72px] sm:bottom-6
       "
     >
       <div
         className="
-          relative z-0
+          relative
           h-[96px] sm:h-[110px]
           rounded-2xl overflow-hidden
           shadow-2xl cursor-pointer group
@@ -82,7 +90,8 @@ const FixedBanner = () => {
           alt={banner.title}
           className="
             absolute inset-0 w-full h-full object-cover
-            transition-transform duration-500 group-hover:scale-105
+            transition-transform duration-500
+            group-hover:scale-105
             z-0
           "
         />
@@ -93,15 +102,20 @@ const FixedBanner = () => {
         {/* CONTENT */}
         <div className="relative z-20 h-full flex items-center justify-between px-4 sm:px-6 text-white">
           <div className="space-y-1">
-            <p className="text-[10px] sm:text-xs uppercase tracking-widest opacity-80">
-              {banner.title}
-            </p>
-            <p className="text-sm sm:text-base font-semibold leading-tight">
-              {banner.subtitle}
-            </p>
+            {banner.title && (
+              <p className="text-[10px] sm:text-xs uppercase tracking-widest opacity-80">
+                {banner.title}
+              </p>
+            )}
+
+            {banner.subtitle && (
+              <p className="text-sm sm:text-base font-semibold leading-tight">
+                {banner.subtitle}
+              </p>
+            )}
           </div>
 
-          {banner.buttonText && (
+          {banner.buttonText && banner.link && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -119,7 +133,7 @@ const FixedBanner = () => {
           )}
         </div>
 
-        {/* ❌ CLOSE BUTTON — ALWAYS ON TOP */}
+        {/* ❌ CLOSE BUTTON (ALWAYS ON TOP) */}
         <button
           onClick={(e) => {
             e.stopPropagation();
@@ -134,6 +148,7 @@ const FixedBanner = () => {
             shadow-xl
             hover:bg-gray-100
           "
+          aria-label="Close banner"
         >
           <X size={14} />
         </button>

@@ -14,14 +14,19 @@ const HeroCarousel = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  /* ================= LOAD SLIDES ================= */
+  /* ================= LOAD HERO SLIDES ================= */
   useEffect(() => {
     const fetchSlides = async () => {
       try {
-        const res = await getHeroSlides();
-        const data = res.data.slides || [];
+        setLoading(true);
 
-        const activeSorted = data
+        const res = await getHeroSlides();
+
+        // ✅ backend sends { hero, fixedBanners }
+        const heroSlides = res.data.hero || [];
+
+        // extra safety
+        const activeSorted = heroSlides
           .filter((s) => s.isActive)
           .sort((a, b) => a.order - b.order);
 
@@ -41,17 +46,16 @@ const HeroCarousel = () => {
     if (!slide?.link) return;
 
     if (slide.linkType === "EXTERNAL") {
-      window.open(slide.link, "_blank");
+      window.open(slide.link, "_blank", "noopener,noreferrer");
     } else if (slide.linkType === "ANCHOR") {
-      document.querySelector(slide.link)?.scrollIntoView({
-        behavior: "smooth",
-      });
+      const el = document.querySelector(slide.link);
+      if (el) el.scrollIntoView({ behavior: "smooth" });
     } else {
       navigate(slide.link);
     }
   };
 
-  /* ================= LOADING SKELETON ================= */
+  /* ================= LOADING ================= */
   if (loading) {
     return (
       <div className="w-full h-[420px] bg-slate-200 animate-pulse rounded-xl mx-auto max-w-7xl" />
@@ -60,12 +64,16 @@ const HeroCarousel = () => {
 
   if (!slides.length) return null;
 
+  /* ================= UI ================= */
   return (
     <section className="w-full">
       <Swiper
         modules={[Autoplay, Pagination, EffectFade]}
         effect="fade"
-        autoplay={{ delay: 4500, disableOnInteraction: false }}
+        autoplay={{
+          delay: 4500,
+          disableOnInteraction: false,
+        }}
         loop
         pagination={{ clickable: true }}
         className="w-full"
@@ -78,6 +86,7 @@ const HeroCarousel = () => {
                 src={slide.image?.url}
                 alt={slide.title}
                 className="w-full h-full object-cover"
+                loading="lazy"
               />
 
               {/* OVERLAY */}
@@ -87,19 +96,22 @@ const HeroCarousel = () => {
               <div className="absolute inset-0 flex items-center">
                 <div className="max-w-7xl mx-auto px-6 w-full">
                   <div className="max-w-xl text-white space-y-4">
-                    <p className="uppercase tracking-widest text-xs sm:text-sm opacity-80">
-                      {slide.title}
-                    </p>
+                    {slide.title && (
+                      <p className="uppercase tracking-widest text-xs sm:text-sm opacity-80">
+                        {slide.title}
+                      </p>
+                    )}
 
-                    <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight">
-                      {slide.subtitle}
-                    </h1>
+                    {slide.subtitle && (
+                      <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold leading-tight">
+                        {slide.subtitle}
+                      </h1>
+                    )}
 
                     {slide.buttonText && slide.link && (
                       <button
                         onClick={() => handleCTA(slide)}
-                        className="inline-flex items-center
-                          px-6 py-3 rounded-full
+                        className="inline-flex items-center px-6 py-3 rounded-full
                           bg-white text-black text-sm font-semibold
                           hover:bg-gray-200 transition"
                       >

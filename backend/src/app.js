@@ -14,6 +14,7 @@ import heroRoutes from "./routes/hero.routes.js";
 import settingsRoutes from "./routes/settings.routes.js";
 import userRoutes from "./routes/user.routes.js";
 import cartRoutes from "./routes/cart.routes.js";
+import videoRoutes from "./routes/video.routes.js";
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/hero", heroRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/cart", cartRoutes);
+app.use("/api/videos", videoRoutes);
 
 // ✅ Test Route
 app.get("/", (req, res) => {
