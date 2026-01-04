@@ -72,7 +72,7 @@ const FixedBanner = () => {
       fixed left-1/2 -translate-x-1/2
       z-[999]
       w-[95%] max-w-4xl
-      bottom-[72px] sm:bottom-6
+      bottom-[85px] sm:bottom-6
     "
   >
     <div

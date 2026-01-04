@@ -88,7 +88,7 @@ const BestSeller = () => {
         ? Array.from({ length: 10 }).map((_, i) => (
             <ProductCardSkeleton key={i} />
           ))
-        : products.map((product) => (
+        : products.slice(0,10).map((product) => (
             <ProductCard key={product._id} product={product} />
           ))}
     </div>

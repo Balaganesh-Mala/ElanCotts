@@ -26,6 +26,8 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [zoomStyle, setZoomStyle] = useState({});
+  const [addingToCart, setAddingToCart] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
 
   const [activeColor, setActiveColor] = useState(null);
   const [activeSize, setActiveSize] = useState(null);
@@ -85,14 +87,50 @@ const ProductDetails = () => {
       return;
     }
 
+    try {
+      setAddingToCart(true);
+
+      await addToCartBackend({
+        productId: product._id,
+        variantSku: activeSize.sku,
+        qty,
+      });
+
+      Swal.fire("Added", "Product added to cart", "success");
+    } catch (err) {
+      Swal.fire("Error", "Failed to add to cart", "error");
+    } finally {
+      setAddingToCart(false);
+    }
+  };
+
+  const handleBuyNow = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    Swal.fire("Login Required", "Please login to continue", "warning");
+    navigate("/login");
+    return;
+  }
+
+  if (!activeSize) return;
+
+  try {
+    setBuyingNow(true);
+
     await addToCartBackend({
       productId: product._id,
       variantSku: activeSize.sku,
       qty,
     });
 
-    Swal.fire("Added", "Product added to cart", "success");
-  };
+    navigate("/checkout", { state: { buyNow: true } });
+  } catch (err) {
+    Swal.fire("Error", "Buy now failed", "error");
+  } finally {
+    setBuyingNow(false);
+  }
+};
 
   /* ================= LOADING ================= */
   if (loading) {
@@ -411,55 +449,43 @@ const ProductDetails = () => {
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* ADD TO CART */}
             <button
-              disabled={!activeSize || stock === 0}
+              disabled={!activeSize || stock === 0 || addingToCart}
               onClick={handleAddToCart}
               className="w-full border border-blue-700 text-blue-700
-      bg-blue-50 py-3 rounded-lg text-sm font-semibold
-      hover:bg-blue-100 transition
-      disabled:opacity-50 disabled:cursor-not-allowed"
+    bg-blue-50 py-3 rounded-lg text-sm font-semibold
+    hover:bg-blue-100 transition
+    disabled:opacity-50 disabled:cursor-not-allowed
+    flex items-center justify-center gap-2"
             >
-              Add to Cart
+              {addingToCart ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                "Add to Cart"
+              )}
             </button>
 
             {/* BUY NOW */}
             <button
-              disabled={!activeSize || stock === 0}
-              onClick={async () => {
-                if (!activeSize) return;
+  disabled={!activeSize || stock === 0 || buyingNow}
+  onClick={handleBuyNow}
+  className="w-full bg-blue-600 text-white py-3 rounded-lg
+    text-sm font-semibold hover:bg-blue-700 transition
+    disabled:opacity-50 disabled:cursor-not-allowed
+    flex items-center justify-center gap-2"
+>
+  {buyingNow ? (
+    <>
+      <Loader2 className="w-4 h-4 animate-spin" />
+      Processing...
+    </>
+  ) : (
+    "Buy Now"
+  )}
+</button>
 
-                const token = localStorage.getItem("token");
-
-                // 🟡 GUEST BUY NOW
-                if (!token) {
-                  navigate("/checkout", {
-                    state: {
-                      guestBuyNow: true,
-                      item: {
-                        productId: product._id,
-                        variantSku: activeSize.sku,
-                        qty,
-                        price: activeSize.price,
-                      },
-                    },
-                  });
-                  return;
-                }
-
-                // 🟢 AUTH BUY NOW
-                await addToCartBackend({
-                  productId: product._id,
-                  variantSku: activeSize.sku,
-                  qty,
-                });
-
-                navigate("/checkout", { state: { buyNow: true } });
-              }}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg
-      text-sm font-semibold hover:bg-blue-700 transition
-      disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Buy Now
-            </button>
           </div>
 
           {/* ACCORDION – PRODUCT DETAILS */}

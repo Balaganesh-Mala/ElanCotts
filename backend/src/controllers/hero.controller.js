@@ -15,8 +15,22 @@ const getSlideType = (order) => {
 
 const uploadImageToCloudinary = async (buffer) => {
   const optimized = await sharp(buffer)
-    .resize(1200, 500, { fit: "cover" })
-    .toFormat("webp", { quality: 80 })
+    .resize({
+      width: 1920, // Full HD banners
+      withoutEnlargement: true,
+      fit: "inside",
+    })
+    .sharpen({
+      // IMPORTANT
+      sigma: 0.6,
+      m1: 0.5,
+      m2: 0.5,
+    })
+    .webp({
+      quality: 92, // 🔥 increase quality
+      effort: 6, // better compression algorithm
+      smartSubsample: true, // preserves text & edges
+    })
     .toBuffer();
 
   return new Promise((resolve, reject) => {
@@ -90,7 +104,6 @@ export const createHeroSlide = asyncHandler(async (req, res) => {
     slide,
   });
 });
-
 
 /* =====================================================
    📦 GET SLIDES (PUBLIC)
@@ -176,7 +189,6 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
     slide,
   });
 });
-
 
 /* =====================================================
    ❌ DELETE SLIDE (ADMIN)

@@ -6,8 +6,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
 
-import image1 from "../../assets/images/image1.jpg";
-import image2 from "../../assets/images/image2.jpg";
+import image1 from "../../assets/images/banner1.png";
+import image2 from "../../assets/images/banner2.png";
 
 const images = [image1, image2];
 

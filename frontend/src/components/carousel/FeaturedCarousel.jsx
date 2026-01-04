@@ -38,7 +38,7 @@ const FeaturedCarousel = () => {
   if (!loading && !products.length) return null;
 
   return (
-    <section className="bg-white py-20">
+    <section className="bg-white py-5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6">
         {/* 🔹 Header */}
         <div className="mb-10 max-w-xl">
