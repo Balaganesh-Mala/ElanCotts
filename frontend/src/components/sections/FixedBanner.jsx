@@ -35,7 +35,7 @@ const FixedBanner = () => {
           // auto hide after 7s
           hideTimer = setTimeout(() => {
             setVisible(false);
-          }, 15000);
+          }, 55000);
         }, 5000);
       } catch (err) {
         console.error("Fixed banner error:", err);
@@ -67,23 +67,25 @@ const FixedBanner = () => {
   if (!banner || !visible) return null;
 
   return (
+  <div
+    className="
+      fixed left-1/2 -translate-x-1/2
+      z-[999]
+      w-[95%] max-w-4xl
+      bottom-[72px] sm:bottom-6
+    "
+  >
     <div
       className="
-        fixed left-1/2 -translate-x-1/2
-        z-[9998]
-        w-[95%] max-w-4xl
-        bottom-[72px] sm:bottom-6
+        relative
+        h-[96px] sm:h-[110px]
+        rounded-2xl
+        shadow-2xl cursor-pointer group
       "
+      onClick={handleCTA}
     >
-      <div
-        className="
-          relative
-          h-[96px] sm:h-[110px]
-          rounded-2xl overflow-hidden
-          shadow-2xl cursor-pointer group
-        "
-        onClick={handleCTA}
-      >
+      {/* 🔥 INNER CLIPPED CONTAINER */}
+      <div className="absolute inset-0 rounded-2xl overflow-hidden">
         {/* IMAGE */}
         <img
           src={banner.image.url}
@@ -92,15 +94,14 @@ const FixedBanner = () => {
             absolute inset-0 w-full h-full object-cover
             transition-transform duration-500
             group-hover:scale-105
-            z-0
           "
         />
 
         {/* OVERLAY */}
-        <div className="absolute inset-0 bg-black/55 z-10" />
+        <div className="absolute inset-0 bg-black/55" />
 
         {/* CONTENT */}
-        <div className="relative z-20 h-full flex items-center justify-between px-4 sm:px-6 text-white">
+        <div className="relative h-full flex items-center justify-between px-4 sm:px-6 text-white">
           <div className="space-y-1">
             {banner.title && (
               <p className="text-[10px] sm:text-xs uppercase tracking-widest opacity-80">
@@ -132,29 +133,31 @@ const FixedBanner = () => {
             </button>
           )}
         </div>
-
-        {/* ❌ CLOSE BUTTON (ALWAYS ON TOP) */}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setVisible(false);
-          }}
-          className="
-            absolute -top-2 -right-2
-            z-[9999]
-            bg-white text-gray-800
-            w-7 h-7 rounded-full
-            flex items-center justify-center
-            shadow-xl
-            hover:bg-gray-100
-          "
-          aria-label="Close banner"
-        >
-          <X size={14} />
-        </button>
       </div>
+
+      {/* ❌ CLOSE BUTTON — NOW VISIBLE */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          setVisible(false);
+        }}
+        className="
+          absolute -top-2 -right-2
+          z-[9999]
+          bg-white text-gray-800
+          w-7 h-7 rounded-full
+          flex items-center justify-center
+          shadow-xl
+          hover:bg-gray-100
+        "
+        aria-label="Close banner"
+      >
+        <X size={14} />
+      </button>
     </div>
-  );
+  </div>
+);
+
 };
 
 export default FixedBanner;
