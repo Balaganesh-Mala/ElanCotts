@@ -9,7 +9,7 @@ import sharp from "sharp";
 
 const getSlideType = (order) => {
   if (order >= 1 && order <= 9) return "HERO";
-  if (order >= 10 && order <= 14) return "FIXED_BANNER";
+  if (order >= 10 && order <= 20) return "FIXED_BANNER";
   return "UNKNOWN";
 };
 
@@ -66,7 +66,7 @@ export const createHeroSlide = asyncHandler(async (req, res) => {
   if (slideType === "UNKNOWN") {
     return res.status(400).json({
       success: false,
-      message: "Order must be between 1–14 ❌",
+      message: "Order must be between 1–20 ❌",
     });
   }
 
@@ -100,7 +100,7 @@ export const createHeroSlide = asyncHandler(async (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: "Slide created ✅",
+    message: "Slide created",
     slide,
   });
 });
@@ -126,7 +126,7 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
   if (!slide) {
     return res.status(404).json({
       success: false,
-      message: "Slide not found ❌",
+      message: "Slide not found",
     });
   }
 
@@ -140,7 +140,7 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
     if (slideType === "UNKNOWN") {
       return res.status(400).json({
         success: false,
-        message: "Order must be between 1–14 ❌",
+        message: "Order must be between 1–20",
       });
     }
 
@@ -152,7 +152,7 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
     if (exists) {
       return res.status(400).json({
         success: false,
-        message: "Order already in use ❌",
+        message: "Order already in use",
       });
     }
 
@@ -185,7 +185,7 @@ export const updateHeroSlide = asyncHandler(async (req, res) => {
 
   res.json({
     success: true,
-    message: "Slide updated ✅",
+    message: "Slide updated",
     slide,
   });
 });
@@ -198,7 +198,7 @@ export const deleteHeroSlide = asyncHandler(async (req, res) => {
   if (!slide) {
     return res
       .status(404)
-      .json({ success: false, message: "Slide not found ❌" });
+      .json({ success: false, message: "Slide not found" });
   }
 
   if (slide.image?.public_id) {
@@ -209,6 +209,6 @@ export const deleteHeroSlide = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     success: true,
-    message: "Slide deleted ✅",
+    message: "Slide deleted",
   });
 });

@@ -118,10 +118,10 @@ const FixedBannerManager = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (form.order < 10 || form.order > 14) {
+    if (form.order < 10 || form.order > 20) {
       return Swal.fire(
         "Invalid Order",
-        "Fixed Banner order must be between 10–14",
+        "Fixed Banner order must be between 10–20",
         "warning"
       );
     }
@@ -144,7 +144,7 @@ const FixedBannerManager = () => {
         ? await api.put(`/hero/${editId}`, fd, auth)
         : await api.post("/hero/create", fd, auth);
 
-      Swal.fire("Success", "Fixed banner saved ✅", "success");
+      Swal.fire("Success", "Fixed banner saved", "success");
       setFormOpen(false);
       fetchBanners();
     } catch (err) {
@@ -171,7 +171,7 @@ const FixedBannerManager = () => {
 
     await api.delete(`/hero/${id}`, auth);
     fetchBanners();
-    Swal.fire("Deleted", "Fixed banner removed ✅", "success");
+    Swal.fire("Deleted", "Fixed banner removed", "success");
   };
 
   /* ================= UI ================= */
@@ -193,7 +193,7 @@ const FixedBannerManager = () => {
       ) : (
         <Card>
   <CardHeader>
-    <CardTitle>Fixed Banners (Order 10–14)</CardTitle>
+    <CardTitle>Fixed Banners (Order 10–20)</CardTitle>
   </CardHeader>
 
   <CardContent>
@@ -361,7 +361,7 @@ const FixedBannerManager = () => {
             <Input
               type="number"
               min={10}
-              max={14}
+              max={20}
               value={form.order}
               onChange={(e) =>
                 setForm({ ...form, order: Number(e.target.value) })

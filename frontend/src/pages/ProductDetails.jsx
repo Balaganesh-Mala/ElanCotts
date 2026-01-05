@@ -2,7 +2,13 @@ import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Swal from "sweetalert2";
 import { Loader2 } from "lucide-react";
-import { FaArrowLeft, FaShoppingCart } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaShoppingCart,
+  FaStar,
+  FaCheckCircle,
+  FaUserCircle,
+} from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { useRecentlyViewed } from "../context/RecentlyViewedContext";
 import { Swiper, SwiperSlide } from "swiper/react";
@@ -105,32 +111,32 @@ const ProductDetails = () => {
   };
 
   const handleBuyNow = async () => {
-  const token = localStorage.getItem("token");
+    const token = localStorage.getItem("token");
 
-  if (!token) {
-    Swal.fire("Login Required", "Please login to continue", "warning");
-    navigate("/login");
-    return;
-  }
+    if (!token) {
+      Swal.fire("Login Required", "Please login to continue", "warning");
+      navigate("/login");
+      return;
+    }
 
-  if (!activeSize) return;
+    if (!activeSize) return;
 
-  try {
-    setBuyingNow(true);
+    try {
+      setBuyingNow(true);
 
-    await addToCartBackend({
-      productId: product._id,
-      variantSku: activeSize.sku,
-      qty,
-    });
+      await addToCartBackend({
+        productId: product._id,
+        variantSku: activeSize.sku,
+        qty,
+      });
 
-    navigate("/checkout", { state: { buyNow: true } });
-  } catch (err) {
-    Swal.fire("Error", "Buy now failed", "error");
-  } finally {
-    setBuyingNow(false);
-  }
-};
+      navigate("/checkout", { state: { buyNow: true } });
+    } catch (err) {
+      Swal.fire("Error", "Buy now failed", "error");
+    } finally {
+      setBuyingNow(false);
+    }
+  };
 
   /* ================= LOADING ================= */
   if (loading) {
@@ -469,23 +475,22 @@ const ProductDetails = () => {
 
             {/* BUY NOW */}
             <button
-  disabled={!activeSize || stock === 0 || buyingNow}
-  onClick={handleBuyNow}
-  className="w-full bg-blue-600 text-white py-3 rounded-lg
+              disabled={!activeSize || stock === 0 || buyingNow}
+              onClick={handleBuyNow}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg
     text-sm font-semibold hover:bg-blue-700 transition
     disabled:opacity-50 disabled:cursor-not-allowed
     flex items-center justify-center gap-2"
->
-  {buyingNow ? (
-    <>
-      <Loader2 className="w-4 h-4 animate-spin" />
-      Processing...
-    </>
-  ) : (
-    "Buy Now"
-  )}
-</button>
-
+            >
+              {buyingNow ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                "Buy Now"
+              )}
+            </button>
           </div>
 
           {/* ACCORDION – PRODUCT DETAILS */}
@@ -562,58 +567,85 @@ const ProductDetails = () => {
 
       {/* ================= REVIEWS ================= */}
       <div className="max-w-7xl mx-auto px-4 py-10 border-t space-y-6">
-        <h2 className="text-xl font-bold">Customer Reviews</h2>
+        <h2 className="text-xl font-semibold text-slate-800">
+          Customer Reviews
+        </h2>
 
-        {product.reviews.length === 0 && (
-          <p className="text-sm text-gray-500">
+        {/* EMPTY STATE */}
+        {product.reviews.filter((r) => r.rating >= 3).length === 0 && (
+          <p className="text-sm text-slate-500">
             No reviews yet. Be the first to review this product.
           </p>
         )}
 
-        {product.reviews.map((review) => (
-          <div key={review._id} className="border rounded-xl p-4 space-y-2">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-semibold">{review.name}</p>
-                {review.verifiedPurchase && (
-                  <span className="text-xs text-green-600">
-                    ✔ Verified Purchase
-                  </span>
+        {/* REVIEWS */}
+        <div className="space-y-4">
+          {product.reviews
+            .filter((review) => review.rating >= 3)
+            .slice(0, 15)
+            .map((review) => (
+              <div
+                key={review._id}
+                className="bg-white border border-slate-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition"
+              >
+                {/* HEADER */}
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex gap-3">
+                    {/* USER ICON */}
+                    <FaUserCircle className="text-3xl text-slate-400" />
+
+                    <div>
+                      <p className="font-semibold text-slate-800">
+                        {review.name}
+                      </p>
+
+                      {review.verifiedPurchase && (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-600 font-medium">
+                          <FaCheckCircle className="text-emerald-500" />
+                          Verified Purchase
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RATING */}
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <FaStar
+                        key={i}
+                        className={`text-sm ${
+                          i <= review.rating
+                            ? "text-amber-400"
+                            : "text-slate-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+
+                {/* COMMENT */}
+                {review.comment && (
+                  <p className="text-sm text-slate-700 mt-3 leading-relaxed">
+                    {review.comment}
+                  </p>
+                )}
+
+                {/* IMAGES */}
+                {review.images?.length > 0 && (
+                  <div className="flex gap-2 pt-3">
+                    {review.images.map((img, i) => (
+                      <img
+                        key={i}
+                        src={img.url}
+                        alt="review"
+                        className="w-16 h-16 object-cover rounded-xl border hover:scale-105 transition"
+                      />
+                    ))}
+                  </div>
                 )}
               </div>
-
-              <div className="flex">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <span
-                    key={i}
-                    className={
-                      i <= review.rating ? "text-yellow-400" : "text-gray-300"
-                    }
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-            </div>
-
-            {review.comment && (
-              <p className="text-sm text-gray-700">{review.comment}</p>
-            )}
-
-            {review.images?.length > 0 && (
-              <div className="flex gap-2 pt-2">
-                {review.images.map((img, i) => (
-                  <img
-                    key={i}
-                    src={img.url}
-                    alt="review"
-                    className="w-16 h-16 object-cover rounded-lg border"
-                  />
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+            ))}
+        </div>
       </div>
     </section>
   );

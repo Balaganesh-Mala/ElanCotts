@@ -10,6 +10,7 @@ import InstagramVideos from "../components/sections/InstagramVideos";
 import CustomerReviews from "../components/sections/CustomerReviews";
 import LandingPromoBanner from "../components/sections/LandingPromoBanner";
 import PromoBanner1 from "../components/sections/PromoBanner1";
+import FAQ from "../components/ui/FAQ";
 
 
 const Home = () => {
@@ -26,6 +27,7 @@ const Home = () => {
       <RecentlyViewed/>
       <InstagramVideos/>
       <CustomerReviews/>
+      <FAQ/>
     </div>
   );
 };

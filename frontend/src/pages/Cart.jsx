@@ -12,6 +12,8 @@ import {
   FiArrowRight,
 } from "react-icons/fi";
 
+import shoppingCartGif from "../assets/gif/shooping.gif"
+
 const Cart = () => {
   const navigate = useNavigate();
   const { cartItems, setCartItems } = useCart();
@@ -101,26 +103,113 @@ const Cart = () => {
 
   /* ================= UI ================= */
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Loading cart...
+  return (
+    <section className="max-w-7xl mx-auto px-4 py-10 animate-pulse">
+      <h1 className="text-2xl font-semibold text-slate-800 mb-6">
+        Shopping Cart
+      </h1>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* ================= CART ITEMS SKELETON ================= */}
+        <div className="lg:col-span-2 space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div
+              key={i}
+              className="bg-white border border-slate-200 rounded-xl p-4 flex gap-4"
+            >
+              {/* IMAGE */}
+              <div className="w-24 h-28 rounded-lg bg-slate-200" />
+
+              {/* DETAILS */}
+              <div className="flex-1 space-y-3">
+                <div className="h-4 w-3/4 bg-slate-200 rounded" />
+                <div className="h-3 w-1/2 bg-slate-200 rounded" />
+
+                <div className="flex gap-3 mt-2">
+                  <div className="h-4 w-16 bg-slate-200 rounded" />
+                  <div className="h-3 w-12 bg-slate-200 rounded" />
+                </div>
+
+                {/* QTY */}
+                <div className="flex items-center gap-2 mt-3">
+                  <div className="w-8 h-8 bg-slate-200 rounded" />
+                  <div className="w-6 h-4 bg-slate-200 rounded" />
+                  <div className="w-8 h-8 bg-slate-200 rounded" />
+                </div>
+              </div>
+
+              {/* PRICE */}
+              <div className="flex flex-col items-end justify-between">
+                <div className="h-4 w-16 bg-slate-200 rounded" />
+                <div className="h-3 w-14 bg-slate-200 rounded" />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ================= SUMMARY SKELETON ================= */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 h-fit">
+          <div className="h-5 w-40 bg-slate-200 rounded mb-5" />
+
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <div className="h-4 w-24 bg-slate-200 rounded" />
+              <div className="h-4 w-20 bg-slate-200 rounded" />
+            </div>
+
+            <div className="flex justify-between">
+              <div className="h-4 w-28 bg-slate-200 rounded" />
+              <div className="h-4 w-20 bg-slate-200 rounded" />
+            </div>
+
+            <div className="flex justify-between">
+              <div className="h-4 w-20 bg-slate-200 rounded" />
+              <div className="h-4 w-16 bg-slate-200 rounded" />
+            </div>
+          </div>
+
+          <div className="h-10 bg-slate-200 rounded-xl mt-6" />
+          <div className="h-4 w-32 bg-slate-200 rounded mt-4 mx-auto" />
+        </div>
       </div>
-    );
-  }
+    </section>
+  );
+}
+
 
   if (cartItems.length === 0) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-lg font-medium">Your cart is empty</p>
-        <button
-          onClick={() => navigate("/shop")}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg"
-        >
-          Continue Shopping
-        </button>
-      </div>
-    );
-  }
+  return (
+    <section className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
+      {/* GIF */}
+      <img
+        src={shoppingCartGif}
+        alt="Empty Cart"
+        className="w-64 h-64 object-contain mb-6 mt-[-80px]"
+      />
+
+      {/* TEXT */}
+      <h2 className="text-2xl font-semibold text-slate-800 mt-[-60px]">
+        Your cart is empty
+      </h2>
+      <p className="text-sm text-slate-500 mt-0 max-w-md">
+        Looks like you haven’t added anything to your cart yet.
+        Start exploring our collections!
+      </p>
+
+      {/* CTA */}
+      <button
+        onClick={() => navigate("/shop")}
+        className="mt-6 px-8 py-3
+        bg-indigo-600 hover:bg-indigo-700
+        text-white rounded-xl font-semibold
+        transition shadow-md"
+      >
+        Continue Shopping
+      </button>
+    </section>
+  );
+}
+
 
   const mrpTotal = cartItems.reduce(
     (sum, item) => sum + item.mrp * item.qty,

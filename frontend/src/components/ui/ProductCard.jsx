@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import discountTagImg from "../../assets/images/discountTag.png";
+import { FaStar, FaRegStar } from "react-icons/fa";
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -47,7 +48,6 @@ const ProductCard = ({ product }) => {
 
         {/* ================= TAGS ================= */}
         <div className="absolute top-0 left-0 right-0 flex justify-between px-0 z-20">
-          
           {/* ✅ BEST SELLER — LEFT */}
           {isBestSeller ? (
             <span
@@ -116,34 +116,41 @@ const ProductCard = ({ product }) => {
         <h3 className="text-sm font-medium text-slate-900 line-clamp-2">
           {product.name}
         </h3>
+        <div className="flex items-center justify-between mt-1">
+          {/* COLORS COUNT */}
+          <p className="text-[11px] text-slate-500">
+            {product.variants.length} colour
+            {product.variants.length > 1 ? "s" : ""} available
+          </p>
 
-        {product.ratingsAverage > 0 && (
-          <div className="flex items-center gap-1 text-xs">
-            <span className="text-amber-500">★</span>
-            <span className="text-slate-600">
-              {product.ratingsAverage.toFixed(1)}
-            </span>
-            <span className="text-slate-400">
-              ({product.ratingsCount})
-            </span>
-          </div>
-        )}
+          {/* RATINGS */}
+          {product.ratingsAverage > 0 && (
+            <div className="flex items-center gap-1 text-xs">
+              {/* ⭐ STAR ICONS */}
+              <div className="flex items-center">
+                {[1, 2, 3, 4, 5].map((star) =>
+                  product.ratingsAverage >= star ? (
+                    <FaStar key={star} className="text-amber-500" size={10} />
+                  ) : (
+                    <FaRegStar
+                      key={star}
+                      className="text-slate-300"
+                      size={10}
+                    />
+                  )
+                )}
+              </div>
 
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-sm font-semibold text-slate-900">
-            ₹{minPrice.toLocaleString()}
-          </span>
+              {/* RATING VALUE */}
+              <span className="ml-0 text-slate-600 font-medium">
+                {product.ratingsAverage.toFixed(1)}
+              </span>
 
-          {hasDiscount && (
-            <span className="text-xs text-slate-400 line-through">
-              ₹{maxMrp.toLocaleString()}
-            </span>
+              {/* RATING COUNT */}
+              <span className="text-slate-400">({product.ratingsCount})</span>
+            </div>
           )}
         </div>
-
-        <p className="text-[11px] text-slate-500 mt-1">
-          {product.variants.length} colours available
-        </p>
       </div>
     </Link>
   );

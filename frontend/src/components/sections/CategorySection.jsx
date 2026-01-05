@@ -3,17 +3,18 @@ import { Link } from "react-router-dom";
 import api from "../../api/axios";
 
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay } from "swiper/modules";
+import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
+import "swiper/css/navigation";
 
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
-import { Loader2 } from "lucide-react";
 
 const CategorySection = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const swiperRef = useRef(null);
+  const prevRef = useRef(null);
+  const nextRef = useRef(null);
 
   /* ================= LOAD CATEGORIES ================= */
   useEffect(() => {
@@ -36,60 +37,39 @@ const CategorySection = () => {
     loadCategories();
   }, []);
 
-  /* ================= LOADING ================= */
+  /* ================= LOADING SKELETON ================= */
   if (loading) {
-  return (
-    <section className="max-w-7xl mx-auto px-6 py-12">
-      {/* HEADER SKELETON */}
-      <div className="flex items-center justify-between mb-8 animate-pulse">
-        <div>
-          <div className="h-7 w-56 bg-slate-200 rounded-md" />
-          <div className="h-4 w-72 bg-slate-200 rounded mt-3" />
-        </div>
-
-        <div className="flex gap-3">
-          <div className="h-9 w-9 rounded-full bg-slate-200" />
-          <div className="h-9 w-9 rounded-full bg-slate-200" />
-        </div>
-      </div>
-
-      {/* CAROUSEL SKELETON */}
-      <div className="flex gap-6 overflow-hidden">
-        {[...Array(6)].map((_, i) => (
-          <div
-            key={i}
-            className="w-[260px] flex-shrink-0 rounded-2xl
-                       overflow-hidden bg-white shadow-md"
-          >
-            {/* IMAGE */}
-            <div className="h-[340px] bg-slate-200 animate-pulse relative">
-              {/* SHIMMER */}
-              <div
-                className="absolute inset-0
-                bg-gradient-to-r from-transparent via-white/40 to-transparent
-                animate-shimmer"
-              />
-            </div>
-
-            {/* TEXT */}
-            <div className="p-4 space-y-3">
-              <div className="h-4 w-3/4 bg-slate-200 rounded" />
-              <div className="h-3 w-1/2 bg-slate-200 rounded" />
-            </div>
+    return (
+      <section className="max-w-7xl mx-auto px-6 py-12">
+        <div className="flex items-center justify-between mb-8 animate-pulse">
+          <div>
+            <div className="h-7 w-56 bg-slate-200 rounded" />
+            <div className="h-4 w-72 bg-slate-200 rounded mt-3" />
           </div>
-        ))}
-      </div>
-    </section>
-  );
-}
+          <div className="flex gap-3">
+            <div className="h-9 w-9 bg-slate-200 rounded-full" />
+            <div className="h-9 w-9 bg-slate-200 rounded-full" />
+          </div>
+        </div>
 
+        <div className="flex gap-6 overflow-hidden">
+          {[...Array(6)].map((_, i) => (
+            <div
+              key={i}
+              className="w-[260px] h-[340px] rounded-2xl bg-slate-200 animate-pulse"
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
 
   if (!categories.length) return null;
 
   return (
     <section className="max-w-7xl mx-auto px-6 py-12">
       {/* ================= HEADER ================= */}
-      <div className="flex items-center justify-between mb-8">
+      <div className="mb-8 flex items-center justify-between">
         <div>
           <h2 className="text-2xl sm:text-3xl font-semibold text-slate-900">
             Explore Our Collections
@@ -100,45 +80,51 @@ const CategorySection = () => {
         </div>
 
         {/* CUSTOM ARROWS */}
-        <div className="flex gap-3">
-          <button
-            onClick={() => swiperRef.current?.slidePrev()}
-            className="p-2 rounded-full border border-slate-300
-                       hover:bg-indigo-600 hover:text-white
-                       transition"
-          >
-            <FiChevronLeft size={20} />
-          </button>
+        {categories.length > 3 && (
+          <div className="hidden md:flex gap-3">
+            <button
+              ref={prevRef}
+              className="w-10 h-10 rounded-full border border-slate-300
+                         flex items-center justify-center
+                         hover:bg-indigo-600 hover:text-white transition"
+            >
+              <FiChevronLeft size={20} />
+            </button>
 
-          <button
-            onClick={() => swiperRef.current?.slideNext()}
-            className="p-2 rounded-full border border-slate-300
-                       hover:bg-indigo-600 hover:text-white
-                       transition"
-          >
-            <FiChevronRight size={20} />
-          </button>
-        </div>
+            <button
+              ref={nextRef}
+              className="w-10 h-10 rounded-full border border-slate-300
+                         flex items-center justify-center
+                         hover:bg-indigo-600 hover:text-white transition"
+            >
+              <FiChevronRight size={20} />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* ================= CAROUSEL ================= */}
       <Swiper
-        modules={[Autoplay]}
-        onSwiper={(swiper) => (swiperRef.current = swiper)}
+        modules={[Autoplay, Navigation]}
         autoplay={{
           delay: 0,
           disableOnInteraction: false,
         }}
         speed={6000}
-        loop
-        slidesPerView="auto"
+        loop={categories.length > 4}
         spaceBetween={24}
+        slidesPerView="auto"
+        navigation={{
+          prevEl: prevRef.current,
+          nextEl: nextRef.current,
+        }}
+        onBeforeInit={(swiper) => {
+          swiper.params.navigation.prevEl = prevRef.current;
+          swiper.params.navigation.nextEl = nextRef.current;
+        }}
       >
         {[...categories, ...categories].map((cat, index) => (
-          <SwiperSlide
-            key={cat._id + index}
-            className="!w-[260px]"
-          >
+          <SwiperSlide key={cat._id + index} className="!w-[260px]">
             <Link
               to={`/category/${cat.slug}`}
               className="block rounded-2xl overflow-hidden
@@ -157,9 +143,7 @@ const CategorySection = () => {
 
                 {/* TEXT */}
                 <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <h3 className="text-lg font-semibold">
-                    {cat.name}
-                  </h3>
+                  <h3 className="text-lg font-semibold">{cat.name}</h3>
                   <p className="text-xs opacity-90 mt-1">
                     Explore Collection →
                   </p>

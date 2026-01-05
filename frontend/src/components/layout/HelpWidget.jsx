@@ -5,19 +5,16 @@ import { IoClose } from "react-icons/io5";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import "swiper/css";
+import { getHeroSlides } from "../../api/hero.api";
 
-import image1 from "../../assets/images/banner1.png";
-import image2 from "../../assets/images/banner2.png";
 
-const images = [image1, image2];
-
-const DEFAULT_TEXT = encodeURIComponent(
-  "Hello! I need help with my order."
-);
+const DEFAULT_TEXT = import.meta.env.VITE_DEFAULT_TEXT || "";
+const HELP_WIDGET_BANNER_ORDERS = [13, 14, 15];
 
 const HelpWidget = () => {
   const [open, setOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [carouselBanners, setCarouselBanners] = useState([]);
 
   // 🔥 SETTINGS FROM API
   const [supportPhone, setSupportPhone] = useState(
@@ -34,6 +31,33 @@ const HelpWidget = () => {
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
+
+  useEffect(() => {
+  const loadCarouselBanners = async () => {
+    try {
+      const res = await getHeroSlides();
+
+      // SAME PATTERN AS PromoBanner
+      const banners =
+        res.data.fixedBanners
+          ?.filter(
+            (b) =>
+              b.isActive &&
+              HELP_WIDGET_BANNER_ORDERS.includes(Number(b.order)) &&
+              b.image?.url
+          )
+          .sort((a, b) => a.order - b.order) || [];
+
+      console.log("HELP WIDGET BANNERS:", banners);
+      setCarouselBanners(banners);
+    } catch (err) {
+      console.error("Failed to load help widget banners", err);
+    }
+  };
+
+  loadCarouselBanners();
+}, []);
+
 
   /* ================= LOAD SETTINGS ================= */
   useEffect(() => {
@@ -117,16 +141,17 @@ const HelpWidget = () => {
         <div className="relative">
           <Swiper
             modules={[Autoplay]}
-            autoplay={{ delay: 3000 }}
-            loop
+            autoplay={{ delay: 3000, disableOnInteraction: false }}
+            loop={carouselBanners.length > 1}
             className="h-40 rounded-t-2xl overflow-hidden"
           >
-            {images.map((img, i) => (
-              <SwiperSlide key={i}>
+            {carouselBanners.map((banner) => (
+              <SwiperSlide key={banner._id}>
                 <img
-                  src={img}
+                  src={banner.image.url}
+                  alt="Support Banner"
                   className="w-full h-40 object-cover"
-                  alt="Support"
+                  loading="lazy"
                 />
               </SwiperSlide>
             ))}
@@ -149,9 +174,7 @@ const HelpWidget = () => {
         <div className="p-5 space-y-4 overflow-y-auto h-[calc(100%-10rem)]">
           <div>
             <h3 className="text-lg font-semibold">How can we help?</h3>
-            <p className="text-sm text-slate-500">
-              Choose one option below
-            </p>
+            <p className="text-sm text-slate-500">Choose one option below</p>
           </div>
 
           {/* WHATSAPP */}
@@ -164,9 +187,7 @@ const HelpWidget = () => {
             <FaWhatsapp size={24} className="text-indigo-600" />
             <div>
               <p className="font-semibold">Chat with us</p>
-              <p className="text-sm text-slate-500">
-                Instant WhatsApp support
-              </p>
+              <p className="text-sm text-slate-500">Instant WhatsApp support</p>
             </div>
           </a>
 
@@ -179,9 +200,7 @@ const HelpWidget = () => {
               <FaPhoneAlt size={22} className="text-indigo-600" />
               <div>
                 <p className="font-semibold">Talk to us</p>
-                <p className="text-sm text-slate-500">
-                  Call customer care
-                </p>
+                <p className="text-sm text-slate-500">Call customer care</p>
               </div>
             </a>
           )}
@@ -195,9 +214,7 @@ const HelpWidget = () => {
               <FaEnvelope size={22} className="text-indigo-600" />
               <div>
                 <p className="font-semibold">Write to us</p>
-                <p className="text-sm text-slate-500">
-                  Email support
-                </p>
+                <p className="text-sm text-slate-500">Email support</p>
               </div>
             </a>
           )}

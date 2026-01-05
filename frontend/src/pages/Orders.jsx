@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import api from "../api/axios";
 
+import emptyOrderGif from "../assets/gif/emptyOrder.gif";
+
 const Orders = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
@@ -82,17 +84,162 @@ const Orders = () => {
 
   if (orders.length === 0) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4">
-        <p className="text-lg font-medium">You have no orders yet</p>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-5 px-4 text-center">
+        {/* GIF */}
+        <img
+          src={emptyOrderGif}
+          alt="No orders"
+          className="w-52 h-52 object-contain"
+        />
+
+        {/* TEXT */}
+        <h2 className="text-xl font-semibold text-slate-800">No orders yet</h2>
+
+        <p className="text-sm text-slate-500 max-w-sm">
+          Looks like you haven’t placed any orders yet. Start shopping to see
+          your orders here.
+        </p>
+
+        {/* CTA */}
         <button
           onClick={() => navigate("/shop")}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg"
+          className="mt-2 px-6 py-3 rounded-xl
+        bg-indigo-600 text-white font-semibold
+        hover:bg-indigo-700 transition"
         >
           Continue Shopping
         </button>
       </div>
     );
   }
+
+  const openReviewModal = async (productId, productName) => {
+    let selectedRating = 0;
+
+    const result = await Swal.fire({
+      title: `Rate & Review`,
+      html: `
+      <div style="text-align:left">
+        <p style="font-weight:600;margin-bottom:8px text-[14px]">${productName}</p>
+
+        <!-- STARS -->
+        <div id="star-container" style="
+          display:flex;
+          gap:8px;
+          font-size:42px;
+          justify-content:center;
+          margin:12px 0;
+          cursor:pointer;
+        ">
+          ${[1, 2, 3, 4, 5]
+            .map(
+              (n) =>
+                `<span data-star="${n}" style="color:#cbd5e1;transition:.2s">★</span>`
+            )
+            .join("")}
+        </div>
+
+        <p id="rating-text" style="
+          text-align:center;
+          font-size:14px;
+          color:#64748b;
+          margin-bottom:10px
+        ">
+          Tap to rate
+        </p>
+
+        <!-- COMMENT -->
+        <textarea
+          id="review-comment"
+          class="swal2-textarea"
+          placeholder="Share your experience (optional)"
+          style="
+            min-height:90px;
+            border-radius:12px;
+            font-size:14px0;
+            width:85%
+          "
+        ></textarea>
+      </div>
+    `,
+      showCancelButton: true,
+      confirmButtonText: "Submit Review",
+      cancelButtonText: "Cancel",
+      confirmButtonColor: "#4f46e5",
+      focusConfirm: false,
+
+      didOpen: () => {
+        const stars = document.querySelectorAll("#star-container span");
+        const ratingText = document.getElementById("rating-text");
+
+        const labels = ["Poor", "Fair", "Good", "Very Good", "Excellent"];
+
+        stars.forEach((star, index) => {
+          // HOVER
+          star.addEventListener("mouseenter", () => {
+            stars.forEach((s, i) => {
+              s.style.color = i <= index ? "#f59e0b" : "#cbd5e1";
+            });
+            ratingText.textContent = labels[index];
+          });
+
+          // CLICK
+          star.addEventListener("click", () => {
+            selectedRating = index + 1;
+            ratingText.textContent = `You rated: ${labels[index]}`;
+          });
+        });
+
+        // RESET on mouse leave
+        document
+          .getElementById("star-container")
+          .addEventListener("mouseleave", () => {
+            stars.forEach((s, i) => {
+              s.style.color = i < selectedRating ? "#f59e0b" : "#cbd5e1";
+            });
+            ratingText.textContent =
+              selectedRating > 0
+                ? `You rated: ${labels[selectedRating - 1]}`
+                : "Tap to rate";
+          });
+      },
+
+      preConfirm: () => {
+        const comment = document.getElementById("review-comment").value.trim();
+
+        if (selectedRating === 0) {
+          Swal.showValidationMessage("Please select a rating ⭐");
+          return false;
+        }
+
+        return { rating: selectedRating, comment };
+      },
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+      await api.post(`/products/${productId}/reviews`, result.value, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      Swal.fire({
+        icon: "success",
+        title: "Thank you!",
+        text: "Your review has been submitted",
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err?.response?.data?.message || "Failed to add review",
+        "error"
+      );
+    }
+  };
 
   return (
     <section className="max-w-7xl mx-auto px-4 py-8 space-y-6">
@@ -124,6 +271,7 @@ const Orders = () => {
               <th className="px-5 py-4 font-medium">Total</th>
               <th className="px-5 py-4 font-medium">Payment</th>
               <th className="px-5 py-4 font-medium">Status</th>
+              <th className="px-5 py-4 font-medium">Review</th>
               <th className="px-5 py-4 font-medium text-right">Action</th>
             </tr>
           </thead>
@@ -148,41 +296,22 @@ const Orders = () => {
 
                 {/* PRODUCTS */}
                 <td className="px-5 py-4">
-                  <div className="flex items-center gap-2">
-                    {order.orderItems.slice(0, 3).map((item, index) => (
+                  <div className="flex gap-3 flex-wrap">
+                    {order.orderItems.map((item) => (
                       <img
-                        key={index}
+                        key={item.product._id}
                         src={item.image}
                         alt={item.name}
-                        /* 🟢 Tooltip */
                         title={item.name}
-                        /* 🟢 Click → Order details */
-                        onClick={() => navigate(`/orders/${order._id}`)}
-                        /* 🟢 Hover zoom + pointer */
-                        className="
-      w-10 h-12 rounded-md object-cover border
-      cursor-pointer
-      hover:scale-105 hover:shadow-md
-      transition-transform duration-200
-    "
+                        className="w-10 h-12 rounded-md object-cover border"
                       />
                     ))}
-
-                    {order.orderItems.length > 3 && (
-                      <span className="text-xs text-slate-500">
-                        +{order.orderItems.length - 3}
-                      </span>
-                    )}
                   </div>
                 </td>
 
-                {/* ITEMS COUNT */}
+                {/* ITEMS */}
                 <td className="px-5 py-4 text-center">
-                  <span
-                    className="inline-flex items-center justify-center
-    min-w-[28px] px-2 py-1 rounded-full
-    bg-slate-100 text-slate-700 text-xs font-semibold"
-                  >
+                  <span className="inline-flex min-w-[28px] px-2 py-1 rounded-full bg-slate-100 text-slate-700 text-xs font-semibold">
                     {order.orderItems.length}
                   </span>
                 </td>
@@ -192,7 +321,7 @@ const Orders = () => {
                   ₹{order.totalPrice.toFixed(2)}
                 </td>
 
-                {/* PAYMENT STATUS */}
+                {/* PAYMENT */}
                 <td className="px-5 py-4">
                   <p className="text-slate-700 font-medium">
                     {order.paymentStatus}
@@ -202,20 +331,45 @@ const Orders = () => {
                   </p>
                 </td>
 
-                {/* ORDER STATUS */}
+                {/* STATUS */}
                 <td className="px-5 py-4">
                   <span
                     className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold
-                  ${
-                    order.orderStatus === "DELIVERED"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : order.orderStatus === "CANCELLED"
-                      ? "bg-red-100 text-red-700"
-                      : "bg-amber-100 text-amber-700"
-                  }`}
+            ${
+              order.orderStatus === "DELIVERED"
+                ? "bg-emerald-100 text-emerald-700"
+                : order.orderStatus === "CANCELLED"
+                ? "bg-red-100 text-red-700"
+                : "bg-amber-100 text-amber-700"
+            }`}
                   >
                     {order.orderStatus}
                   </span>
+                </td>
+
+                {/* ⭐ REVIEW COLUMN */}
+                <td className="px-5 py-4">
+                  <div className="flex flex-col gap-1">
+                    {order.orderItems.map((item) => (
+                      <button
+                        key={item.product._id}
+                        disabled={order.orderStatus !== "DELIVERED"}
+                        onClick={() =>
+                          openReviewModal(item.product._id, item.name)
+                        }
+                        className={`text-xs font-medium text-left
+                ${
+                  order.orderStatus === "DELIVERED"
+                    ? "text-indigo-600 hover:underline"
+                    : "text-slate-400 cursor-not-allowed"
+                }`}
+                      >
+                        {order.orderStatus === "DELIVERED"
+                          ? "Add Review"
+                          : "Pending"}
+                      </button>
+                    ))}
+                  </div>
                 </td>
 
                 {/* ACTION */}
