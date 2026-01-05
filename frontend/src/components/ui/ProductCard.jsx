@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import discountTagImg from "../../assets/images/discountTag.png";
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
@@ -23,17 +24,16 @@ const ProductCard = ({ product }) => {
   const hoverImage = product.variants[0]?.images?.[1]?.url;
   const [imgSrc, setImgSrc] = useState(primaryImage);
 
-  /* ✅ BEST SELLER FLAG (CORRECT) */
   const isBestSeller = product.isBestSeller === true;
 
   return (
     <Link
       to={`/product/${product.slug}`}
-      className="group block bg-white rounded-xl overflow-hidden
-        border border-slate-200 hover:shadow-lg transition
-        focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      className="group block bg-white rounded-xl 
+      border border-slate-200 hover:shadow-lg transition
+      focus:outline-none focus:ring-2 focus:ring-indigo-500"
     >
-      {/* IMAGE */}
+      {/* ================= IMAGE ================= */}
       <div
         className="relative"
         onMouseEnter={() => hoverImage && setImgSrc(hoverImage)}
@@ -42,38 +42,51 @@ const ProductCard = ({ product }) => {
         <img
           src={imgSrc}
           alt={product.name}
-          className="w-full h-[260px] object-cover transition-all duration-300"
+          className="w-full h-[260px] object-cover transition-all duration-300 overflow-hidden"
         />
 
-        {/* ✅ BEST SELLER TAG */}
-        {isBestSeller && (
-          <div className="absolute top-3 left-0">
+        {/* ================= TAGS ================= */}
+        <div className="absolute top-0 left-0 right-0 flex justify-between px-0 z-20">
+          
+          {/* ✅ BEST SELLER — LEFT */}
+          {isBestSeller ? (
             <span
               className="bg-gradient-to-r from-amber-500 to-orange-500
-        text-white text-[11px] font-semibold
-        px-3 py-1 rounded-r-full shadow"
+              text-white text-[11px] font-semibold
+              px-3 py-0 rounded-r-full shadow-md h-5"
             >
               Best Seller
             </span>
-          </div>
-        )}
+          ) : (
+            <span />
+          )}
 
-        {/* DISCOUNT TAG */}
-        {hasDiscount && (
-          <span
-            className={`absolute top-3 ${
-              isBestSeller ? "left-28" : "left-3"
-            } bg-white text-indigo-700
-            text-[11px] font-semibold px-2 py-1 rounded`}
-          >
-            {discountPercent}% OFF
-          </span>
-        )}
+          {/* ✅ DISCOUNT — RIGHT */}
+          {hasDiscount && (
+            <div className="relative w-11 h-14  top-[-15px] mr-2">
+              <img
+                src={discountTagImg}
+                alt={`${discountPercent}% OFF`}
+                className="w-full h-full object-contain drop-shadow-md"
+              />
 
-        {/* VIEW DETAILS BUTTON */}
+              {/* TEXT OVER IMAGE */}
+              <div
+                className="absolute inset-0 flex flex-col
+                items-center justify-center
+                text-white font-bold leading-tight"
+              >
+                <span className="text-[10px]">{discountPercent}%</span>
+                <span className="text-[8px]">OFF</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ================= VIEW DETAILS ================= */}
         <div
           className="hidden md:flex absolute bottom-3 left-1/2 -translate-x-1/2
-            opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          opacity-0 group-hover:opacity-100 transition-opacity duration-300"
         >
           <button
             onClick={(e) => {
@@ -82,43 +95,40 @@ const ProductCard = ({ product }) => {
               navigate(`/product/${product.slug}`);
             }}
             className="flex items-center gap-2
-              bg-white/90 backdrop-blur
-              text-slate-900 border border-white
-              px-4 py-2 text-xs font-semibold
-              rounded-lg shadow
-              hover:bg-white transition"
+            bg-white/90 backdrop-blur
+            text-slate-900 border border-white
+            px-4 py-2 text-xs font-semibold
+            rounded-lg shadow hover:bg-white transition"
           >
             View Details
           </button>
         </div>
       </div>
 
-      {/* INFO */}
+      {/* ================= INFO ================= */}
       <div className="px-3 pt-3 pb-4 space-y-1">
-        {/* BRAND */}
         {product.brand && (
           <p className="text-[11px] uppercase tracking-wide text-slate-500">
             {product.brand}
           </p>
         )}
 
-        {/* NAME */}
         <h3 className="text-sm font-medium text-slate-900 line-clamp-2">
           {product.name}
         </h3>
 
-        {/* RATING */}
         {product.ratingsAverage > 0 && (
           <div className="flex items-center gap-1 text-xs">
             <span className="text-amber-500">★</span>
             <span className="text-slate-600">
               {product.ratingsAverage.toFixed(1)}
             </span>
-            <span className="text-slate-400">({product.ratingsCount})</span>
+            <span className="text-slate-400">
+              ({product.ratingsCount})
+            </span>
           </div>
         )}
 
-        {/* PRICE */}
         <div className="flex items-center gap-2 mt-1">
           <span className="text-sm font-semibold text-slate-900">
             ₹{minPrice.toLocaleString()}
@@ -131,7 +141,6 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        {/* COLOR COUNT */}
         <p className="text-[11px] text-slate-500 mt-1">
           {product.variants.length} colours available
         </p>

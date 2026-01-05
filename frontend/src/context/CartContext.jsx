@@ -6,16 +6,6 @@ const CartContext = createContext();
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
 
-  /* ================= LOAD LOCAL CART ================= */
-  useEffect(() => {
-    const localCart = JSON.parse(localStorage.getItem("guestCart")) || [];
-    setCartItems(localCart);
-  }, []);
-
-  
-
-  
-
   /* ================= AUTH CART ================= */
   const addToCartBackend = async ({ productId, variantSku, qty }) => {
     const res = await api.post(

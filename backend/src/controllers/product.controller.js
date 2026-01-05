@@ -496,28 +496,35 @@ export const updateProduct = async (req, res) => {
     }
 
     /* ================= VARIANT IMAGES ================= */
-    if (productData.variants) {
-      const updatedVariants = [];
+    /* ================= SAFE VARIANT UPDATE ================= */
+if (productData.variants) {
+  const updatedVariants = [];
 
-      for (let i = 0; i < productData.variants.length; i++) {
-        const key = `variantImages_${i}`;
-        let images = product.variants[i]?.images || [];
+  for (let i = 0; i < product.variants.length; i++) {
+    const existingVariant = product.variants[i];
+    const incomingVariant = productData.variants[i] || {};
 
-        if (req.files?.[key]) {
-          images = await uploadMultipleToCloudinary(
-            req.files[key],
-            "elan-cotts/products/variants"
-          );
-        }
+    let images = existingVariant.images;
 
-        updatedVariants.push({
-          ...productData.variants[i],
-          images,
-        });
-      }
-
-      product.variants = updatedVariants;
+    const imageKey = `variantImages_${i}`;
+    if (req.files?.[imageKey]) {
+      images = await uploadMultipleToCloudinary(
+        req.files[imageKey],
+        "elan-cotts/products/variants"
+      );
     }
+
+    updatedVariants.push({
+      color: incomingVariant.color ?? existingVariant.color,
+      sizes: incomingVariant.sizes ?? existingVariant.sizes,
+      isActive: incomingVariant.isActive ?? existingVariant.isActive,
+      images,
+    });
+  }
+
+  product.variants = updatedVariants;
+}
+
 
     /* ================= SAFE FIELD UPDATE ================= */
     const allowedFields = [

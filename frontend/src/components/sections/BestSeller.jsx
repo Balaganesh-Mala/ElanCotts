@@ -81,7 +81,7 @@ const BestSeller = () => {
         sm:grid-cols-3
         md:grid-cols-4
         lg:grid-cols-5
-        gap-x-4 sm:gap-x-6
+        gap-x-2 sm:gap-x-6
         gap-y-8 sm:gap-y-10"
     >
       {loading

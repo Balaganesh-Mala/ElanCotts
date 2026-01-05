@@ -21,12 +21,37 @@ const cartItemSchema = new mongoose.Schema(
 
     price: {
       type: Number,
-      required: true, // snapshot price
+      required: true,
+    },
+
+    mrp: {
+      type: Number,
+      required: true,
+    },
+
+    size: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    color: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    image: {
+      type: String,
+      required: true,
+      trim: true,
     },
   },
-  { _id: false }
+  {
+    _id: false,
+    strict: true,
+  }
 );
-
 const cartSchema = new mongoose.Schema(
   {
     user: {
@@ -38,17 +63,8 @@ const cartSchema = new mongoose.Schema(
 
     items: [cartItemSchema],
 
-    coupon: {
-      code: String,
-      discount: Number,
-    },
-
+    /* 💰 TOTALS */
     itemsPrice: {
-      type: Number,
-      default: 0,
-    },
-
-    discountPrice: {
       type: Number,
       default: 0,
     },
@@ -61,5 +77,13 @@ const cartSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// 🔥 FORCE MODEL RESET (DEV ONLY)
+if (mongoose.models.Cart) {
+  delete mongoose.models.Cart;
+}
+
 const Cart = mongoose.model("Cart", cartSchema);
 export default Cart;
+
+
+

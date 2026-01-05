@@ -3,6 +3,14 @@ import { useNavigate } from "react-router-dom";
 import Swal from "sweetalert2";
 import api from "../api/axios";
 import { useCart } from "../context/CartContext";
+import {
+  FiShoppingCart,
+  FiMinus,
+  FiPlus,
+  FiTrash2,
+  FiTag,
+  FiArrowRight,
+} from "react-icons/fi";
 
 const Cart = () => {
   const navigate = useNavigate();
@@ -12,15 +20,21 @@ const Cart = () => {
   const isAuth = Boolean(token);
 
   const [loading, setLoading] = useState(true);
+  const [updatingSku, setUpdatingSku] = useState(null);
   const [subtotal, setSubtotal] = useState(0);
 
   /* ================= LOAD CART ================= */
   useEffect(() => {
+    if (!isAuth) {
+      Swal.fire("Login Required", "Please login to view cart", "warning");
+      navigate("/login");
+      return;
+    }
+
     const loadCart = async () => {
       try {
         setLoading(true);
 
-        // 🟢 AUTH CART
         const res = await api.get("/cart", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -42,58 +56,47 @@ const Cart = () => {
     };
 
     loadCart();
-  }, [isAuth, token, setCartItems]);
-
-  /* ================= SUBTOTAL ================= */
-  const calculateSubtotal = (items) => {
-    const total = items.reduce((sum, i) => sum + i.price * i.qty, 0);
-    setSubtotal(total);
-  };
+  }, [isAuth, token, navigate, setCartItems]);
 
   /* ================= UPDATE QTY ================= */
   const updateQty = async (variantSku, qty) => {
     if (qty <= 0) return removeItem(variantSku);
 
-    // 🟡 GUEST
-    if (!isAuth) {
-      const updated = cartItems.map((i) =>
-        i.variantSku === variantSku ? { ...i, qty } : i
+    try {
+      setUpdatingSku(variantSku);
+
+      const res = await api.put(
+        "/cart/update",
+        { variantSku, qty },
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setCartItems(updated);
-      localStorage.setItem("guestCart", JSON.stringify(updated));
-      calculateSubtotal(updated);
-      return;
+
+      setCartItems(res.data.cart.items);
+      setSubtotal(res.data.cart.itemsPrice);
+    } catch (err) {
+      Swal.fire(
+        "Error",
+        err.response?.data?.message || "Failed to update cart",
+        "error"
+      );
+    } finally {
+      setUpdatingSku(null);
     }
-
-    // 🟢 AUTH
-    const res = await api.put(
-      "/cart/update",
-      { variantSku, qty },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    setCartItems(res.data.cart.items);
-    setSubtotal(res.data.cart.itemsPrice);
   };
 
   /* ================= REMOVE ITEM ================= */
   const removeItem = async (variantSku) => {
-    // 🟡 GUEST
-    if (!isAuth) {
-      const updated = cartItems.filter((i) => i.variantSku !== variantSku);
-      setCartItems(updated);
-      localStorage.setItem("guestCart", JSON.stringify(updated));
-      calculateSubtotal(updated);
-      return;
+    setCartItems((prev) =>
+      prev.filter((item) => item.variantSku !== variantSku)
+    );
+
+    try {
+      await api.delete(`/cart/remove/${encodeURIComponent(variantSku)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch {
+      Swal.fire("Error", "Failed to remove item", "error");
     }
-
-    // 🟢 AUTH
-    const res = await api.delete(`/cart/remove/${variantSku}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    setCartItems(res.data.cart.items);
-    setSubtotal(res.data.cart.itemsPrice);
   };
 
   /* ================= UI ================= */
@@ -119,64 +122,157 @@ const Cart = () => {
     );
   }
 
-  return (
-    <section className="max-w-7xl mx-auto px-4 py-8 grid lg:grid-cols-3 gap-8">
-      {/* CART ITEMS */}
-      <div className="lg:col-span-2 space-y-4">
-        {cartItems.map((item) => (
-          <div
-            key={item.variantSku}
-            className="flex gap-4 border rounded-xl p-4"
-          >
-            <div className="flex-1">
-              <p className="font-medium">{item.product?.name || "Product"}</p>
-              <p className="text-xs text-gray-500">SKU: {item.variantSku}</p>
+  const mrpTotal = cartItems.reduce(
+    (sum, item) => sum + item.mrp * item.qty,
+    0
+  );
 
-              <div className="flex items-center gap-3 mt-3">
+  const discount = mrpTotal - subtotal;
+
+  return (
+    <section className="max-w-7xl mx-auto px-4 py-10">
+      <h1 className="text-2xl font-semibold text-slate-800 mb-6">
+        Shopping Cart
+      </h1>
+
+      <div className="grid lg:grid-cols-3 gap-8">
+        {/* ================= CART ITEMS ================= */}
+        <div className="lg:col-span-2 space-y-4">
+          {cartItems.map((item) => (
+            <div
+              key={item.variantSku}
+              className="bg-white border border-slate-200 rounded-xl p-4 flex gap-4"
+            >
+              {/* IMAGE */}
+              <img
+                src={item.image}
+                alt={item.product?.name}
+                className="w-24 h-28 rounded-lg object-cover border"
+              />
+
+              {/* DETAILS */}
+              <div className="flex-1">
+                <h3 className="font-medium text-slate-800">
+                  {item.product?.name}
+                </h3>
+
+                <p className="text-xs text-slate-500 mt-1">
+                  {item.color} • Size {item.size}
+                </p>
+
+                {/* PRICE */}
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="font-semibold text-slate-900">
+                    ₹{item.price}
+                  </span>
+                  {item.mrp > item.price && (
+                    <span className="text-xs line-through text-slate-400">
+                      ₹{item.mrp}
+                    </span>
+                  )}
+                </div>
+
+                {/* QTY */}
+                <div className="flex items-center gap-2 mt-3">
+                  <button
+                    disabled={updatingSku === item.variantSku}
+                    onClick={() => updateQty(item.variantSku, item.qty - 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded border hover:bg-slate-100 disabled:opacity-40"
+                  >
+                    <FiMinus size={14} />
+                  </button>
+
+                  <span className="w-6 text-center font-medium">
+                    {item.qty}
+                  </span>
+
+                  <button
+                    disabled={updatingSku === item.variantSku}
+                    onClick={() => updateQty(item.variantSku, item.qty + 1)}
+                    className="w-8 h-8 flex items-center justify-center rounded border hover:bg-slate-100 disabled:opacity-40"
+                  >
+                    <FiPlus size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* RIGHT */}
+              <div className="flex flex-col items-end justify-between">
+                <p className="font-semibold text-slate-900">
+                  ₹{item.price * item.qty}
+                </p>
+
                 <button
-                  onClick={() => updateQty(item.variantSku, item.qty - 1)}
-                  className="px-3 border rounded"
+                  disabled={updatingSku === item.variantSku}
+                  onClick={() => removeItem(item.variantSku)}
+                  className="flex items-center gap-1 text-xs text-red-600 hover:underline disabled:opacity-40"
                 >
-                  −
-                </button>
-                <span>{item.qty}</span>
-                <button
-                  onClick={() => updateQty(item.variantSku, item.qty + 1)}
-                  className="px-3 border rounded"
-                >
-                  +
+                  <FiTrash2 size={14} />
+                  Remove
                 </button>
               </div>
             </div>
-
-            <div className="flex flex-col justify-between items-end">
-              <p className="font-semibold">₹{item.price * item.qty}</p>
-              <button
-                onClick={() => removeItem(item.variantSku)}
-                className="text-sm text-red-600"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* SUMMARY */}
-      <div className="border rounded-xl p-6 space-y-4 h-fit">
-        <h3 className="font-semibold text-lg">Price Summary</h3>
-
-        <div className="flex justify-between text-sm">
-          <span>Subtotal</span>
-          <span>₹{subtotal}</span>
+          ))}
         </div>
 
-        <button
-          onClick={() => navigate("/checkout")}
-          className="w-full mt-4 bg-blue-600 text-white py-3 rounded-lg font-semibold"
-        >
-          Proceed to Checkout
-        </button>
+        {/* ================= SUMMARY ================= */}
+        <div className="bg-white border border-slate-200 rounded-xl p-6 h-fit sticky top-24">
+          <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-800 mb-4">
+            <FiShoppingCart className="text-indigo-600" />
+            Price Summary
+          </h2>
+
+          <div className="space-y-3 text-sm">
+            {/* MRP TOTAL */}
+            <div className="flex justify-between">
+              <span className="text-slate-600">MRP Total</span>
+              <span className="text-slate-700">₹{mrpTotal}</span>
+            </div>
+
+            {/* DISCOUNT */}
+            {discount > 0 && (
+              <div className="flex justify-between text-emerald-600">
+                <span className="flex items-center gap-1">Discount on MRP</span>
+                <span>-₹{discount}</span>
+              </div>
+            )}
+
+            {/* SUBTOTAL */}
+            <div className="flex justify-between">
+              <span className="text-slate-600">Subtotal</span>
+              <span className="text-slate-800">₹{subtotal}</span>
+            </div>
+
+            {/* DELIVERY */}
+            <div className="flex justify-between text-slate-500">
+              <span>Delivery</span>
+              <span>Free</span>
+            </div>
+          </div>
+
+          <hr className="my-4" />
+
+          {/* TOTAL */}
+          <div className="flex justify-between text-base font-semibold">
+            <span>Total Amount</span>
+            <span>₹{subtotal}</span>
+          </div>
+
+          <button
+            onClick={() => navigate("/checkout")}
+            className="w-full mt-6 flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-semibold transition"
+          >
+            Proceed to Checkout
+            <FiArrowRight />
+          </button>
+
+          <button
+            onClick={() => navigate("/shop")}
+            className="w-full mt-3 text-sm text-indigo-600 hover:underline"
+          >
+            Continue Shopping
+          </button>
+        </div>
       </div>
     </section>
   );

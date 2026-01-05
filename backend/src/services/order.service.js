@@ -2,7 +2,7 @@ import Order from "../models/order.model.js";
 import Cart from "../models/cart.model.js";
 import Product from "../models/product.model.js";
 import Coupon from "../models/Coupon.model.js";
-
+import User from "../models/user.model.js";
 /* ==========================================================
    BUILD ORDER FROM CART
    - previewOnly = true  → ONLY calculate price (NO DB write)
@@ -39,9 +39,7 @@ export const buildOrderFromCart = async ({
     let matchedSize = null;
 
     for (const variant of product.variants) {
-      const size = variant.sizes.find(
-        (s) => s.sku === item.variantSku
-      );
+      const size = variant.sizes.find((s) => s.sku === item.variantSku);
       if (size) {
         matchedSize = size;
         break;
@@ -68,8 +66,7 @@ export const buildOrderFromCart = async ({
     });
 
     if (!coupon) throw new Error("Invalid coupon");
-    if (new Date(coupon.expiry) < new Date())
-      throw new Error("Coupon expired");
+    if (new Date(coupon.expiry) < new Date()) throw new Error("Coupon expired");
     if (itemsPrice < coupon.minCartValue)
       throw new Error(`Minimum cart value ₹${coupon.minCartValue} required`);
 
@@ -99,9 +96,7 @@ export const buildOrderFromCart = async ({
   const sgst = Number((taxableAmount * SGST_RATE).toFixed(2));
   const totalTax = Number((cgst + sgst).toFixed(2));
 
-  const totalPrice = Number(
-    (taxableAmount + totalTax).toFixed(2)
-  );
+  const totalPrice = Number((taxableAmount + totalTax).toFixed(2));
 
   /* ================= PREVIEW MODE ================= */
   if (previewOnly) {
@@ -117,15 +112,28 @@ export const buildOrderFromCart = async ({
       coupon: appliedCoupon,
     };
   }
+  /* ================= USER SNAPSHOT ================= */
+  const user = await User.findById(userId).select("email");
+
+  if (!user) {
+    throw new Error("User not found");
+  }
 
   /* ================= CREATE ORDER ================= */
   const order = await Order.create({
     user: userId,
+    userEmail: user.email,
 
     orderItems: cart.items.map((item) => ({
       product: item.product._id,
       variantSku: item.variantSku,
+
       name: item.product.name,
+      image: item.image,
+      color: item.color,
+      size: item.size,
+
+      mrp: item.mrp,
       price: item.price,
       qty: item.qty,
     })),

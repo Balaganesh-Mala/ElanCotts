@@ -472,7 +472,10 @@ const Shop = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-6 gap-y-10">
+              <div
+                className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-x-2 sm:gap-x-4
+        gap-y-8 sm:gap-y-10"
+              >
                 {filteredProducts.slice(0, visible).map((p) => (
                   <ProductCard key={p._id} product={p} />
                 ))}

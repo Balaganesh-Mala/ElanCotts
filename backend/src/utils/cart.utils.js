@@ -4,10 +4,5 @@ export const calculateCartTotals = (cart) => {
     0
   );
 
-  cart.discountPrice = cart.coupon?.discount || 0;
-
-  cart.totalPrice = Math.max(
-    cart.itemsPrice - cart.discountPrice,
-    0
-  );
+  cart.totalPrice = cart.itemsPrice;
 };

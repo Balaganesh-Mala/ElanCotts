@@ -84,95 +84,89 @@ const OrderDetails = () => {
   };
 
   /* ================= UI ================= */
- if (loading) {
-  return (
-    <section className="min-h-screen bg-slate-50 px-4 py-8 animate-pulse">
-      <div className="max-w-6xl mx-auto space-y-8">
+  if (loading) {
+    return (
+      <section className="min-h-screen bg-slate-50 px-4 py-8 animate-pulse">
+        <div className="max-w-6xl mx-auto space-y-8">
+          {/* BACK BUTTON */}
+          <div className="h-4 w-32 bg-slate-200 rounded" />
 
-        {/* BACK BUTTON */}
-        <div className="h-4 w-32 bg-slate-200 rounded" />
-
-        {/* HEADER */}
-        <div className="flex justify-between items-start">
-          <div className="space-y-2">
-            <div className="h-6 w-48 bg-slate-200 rounded" />
-            <div className="h-4 w-64 bg-slate-200 rounded" />
-          </div>
-          <div className="h-7 w-28 bg-slate-200 rounded-full" />
-        </div>
-
-        {/* GRID */}
-        <div className="grid lg:grid-cols-3 gap-6">
-
-          {/* LEFT COLUMN */}
-          <div className="lg:col-span-2 space-y-6">
-
-            {/* ORDERED ITEMS */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm space-y-4">
-              <div className="h-5 w-40 bg-slate-200 rounded" />
-              {[...Array(3)].map((_, i) => (
-                <div
-                  key={i}
-                  className="flex justify-between items-center bg-slate-100 rounded-xl p-4"
-                >
-                  <div className="space-y-2">
-                    <div className="h-4 w-48 bg-slate-200 rounded" />
-                    <div className="h-3 w-20 bg-slate-200 rounded" />
-                  </div>
-                  <div className="h-4 w-20 bg-slate-200 rounded" />
-                </div>
-              ))}
-            </div>
-
-            {/* SHIPPING ADDRESS */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm space-y-3">
-              <div className="h-5 w-40 bg-slate-200 rounded" />
-              <div className="h-4 w-56 bg-slate-200 rounded" />
-              <div className="h-4 w-48 bg-slate-200 rounded" />
+          {/* HEADER */}
+          <div className="flex justify-between items-start">
+            <div className="space-y-2">
+              <div className="h-6 w-48 bg-slate-200 rounded" />
               <div className="h-4 w-64 bg-slate-200 rounded" />
             </div>
-
-            {/* SHIPPING INFO */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm space-y-3">
-              <div className="h-5 w-40 bg-slate-200 rounded" />
-              <div className="h-4 w-52 bg-slate-200 rounded" />
-              <div className="h-4 w-44 bg-slate-200 rounded" />
-            </div>
+            <div className="h-7 w-28 bg-slate-200 rounded-full" />
           </div>
 
-          {/* RIGHT COLUMN */}
-          <div className="space-y-6">
+          {/* GRID */}
+          <div className="grid lg:grid-cols-3 gap-6">
+            {/* LEFT COLUMN */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* ORDERED ITEMS */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="h-5 w-40 bg-slate-200 rounded" />
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex justify-between items-center bg-slate-100 rounded-xl p-4"
+                  >
+                    <div className="space-y-2">
+                      <div className="h-4 w-48 bg-slate-200 rounded" />
+                      <div className="h-3 w-20 bg-slate-200 rounded" />
+                    </div>
+                    <div className="h-4 w-20 bg-slate-200 rounded" />
+                  </div>
+                ))}
+              </div>
 
-            {/* PAYMENT SUMMARY */}
-            <div className="bg-white rounded-3xl p-6 shadow-sm space-y-4">
-              <div className="h-5 w-44 bg-slate-200 rounded" />
+              {/* SHIPPING ADDRESS */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm space-y-3">
+                <div className="h-5 w-40 bg-slate-200 rounded" />
+                <div className="h-4 w-56 bg-slate-200 rounded" />
+                <div className="h-4 w-48 bg-slate-200 rounded" />
+                <div className="h-4 w-64 bg-slate-200 rounded" />
+              </div>
 
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <div className="h-4 w-24 bg-slate-200 rounded" />
-                  <div className="h-4 w-20 bg-slate-200 rounded" />
-                </div>
-                <div className="flex justify-between">
-                  <div className="h-4 w-24 bg-slate-200 rounded" />
-                  <div className="h-4 w-20 bg-slate-200 rounded" />
-                </div>
-                <div className="flex justify-between pt-4 border-t">
-                  <div className="h-5 w-32 bg-slate-200 rounded" />
-                  <div className="h-6 w-28 bg-slate-200 rounded" />
-                </div>
+              {/* SHIPPING INFO */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm space-y-3">
+                <div className="h-5 w-40 bg-slate-200 rounded" />
+                <div className="h-4 w-52 bg-slate-200 rounded" />
+                <div className="h-4 w-44 bg-slate-200 rounded" />
               </div>
             </div>
 
-            {/* INVOICE BUTTON */}
-            <div className="h-14 bg-slate-200 rounded-2xl" />
+            {/* RIGHT COLUMN */}
+            <div className="space-y-6">
+              {/* PAYMENT SUMMARY */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm space-y-4">
+                <div className="h-5 w-44 bg-slate-200 rounded" />
+
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <div className="h-4 w-24 bg-slate-200 rounded" />
+                    <div className="h-4 w-20 bg-slate-200 rounded" />
+                  </div>
+                  <div className="flex justify-between">
+                    <div className="h-4 w-24 bg-slate-200 rounded" />
+                    <div className="h-4 w-20 bg-slate-200 rounded" />
+                  </div>
+                  <div className="flex justify-between pt-4 border-t">
+                    <div className="h-5 w-32 bg-slate-200 rounded" />
+                    <div className="h-6 w-28 bg-slate-200 rounded" />
+                  </div>
+                </div>
+              </div>
+
+              {/* INVOICE BUTTON */}
+              <div className="h-14 bg-slate-200 rounded-2xl" />
+            </div>
           </div>
         </div>
-      </div>
-    </section>
-  );
-}
-
-
+      </section>
+    );
+  }
 
   if (!order) return null;
 
@@ -236,22 +230,47 @@ const OrderDetails = () => {
               {order.orderItems.map((item) => (
                 <div
                   key={item.variantSku}
-                  className="flex items-center justify-between
-          rounded-xl border border-slate-100 bg-slate-50 px-4 py-3"
+                  className="flex gap-4 items-start
+    rounded-2xl border border-slate-200 bg-white px-4 py-4
+    hover:shadow-sm transition"
                 >
-                  <div className="space-y-1">
-                    <p className="font-medium text-slate-800">{item.name}</p>
-                    <span
-                      className="inline-flex items-center px-2 py-0.5
-              rounded-full text-xs bg-indigo-100 text-indigo-700"
-                    >
-                      Qty {item.qty}
-                    </span>
+                  {/* PRODUCT IMAGE */}
+                  <img
+                    src={item.image}
+                    alt={item.name}
+                    title={item.name}
+                    onClick={() => navigate(`/orders/${order._id}`)}
+                    className="w-20 h-24 rounded-xl object-cover border
+      cursor-pointer hover:scale-105 transition"
+                  />
+
+                  {/* PRODUCT INFO */}
+                  <div className="flex-1 space-y-1">
+                    <p className="font-medium text-slate-800 leading-snug">
+                      {item.name}
+                    </p>
+
+                    <p className="text-xs text-slate-500">
+                      {item.color} • {item.size}
+                    </p>
+
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="line-through text-slate-400">
+                        ₹{item.mrp}
+                      </span>
+                      <span className="text-indigo-600 font-semibold">
+                        ₹{item.price}
+                      </span>
+                      <span className="text-slate-500">× {item.qty}</span>
+                    </div>
                   </div>
 
-                  <p className="font-semibold text-slate-900">
-                    ₹{(item.price * item.qty).toFixed(2)}
-                  </p>
+                  {/* TOTAL */}
+                  <div className="text-right">
+                    <p className="font-semibold text-slate-900">
+                      ₹{(item.price * item.qty).toFixed(2)}
+                    </p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -275,7 +294,7 @@ const OrderDetails = () => {
               <p className="font-semibold text-slate-800">
                 {order.shippingAddress.name}
               </p>
-              <p className="text-slate-600">📞 {order.shippingAddress.phone}</p>
+              <p className="text-slate-600">{order.shippingAddress.phone}</p>
               <p>{order.shippingAddress.street}</p>
               <p>
                 {order.shippingAddress.city}, {order.shippingAddress.state} –{" "}

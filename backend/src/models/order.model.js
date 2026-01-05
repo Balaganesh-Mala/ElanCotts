@@ -2,11 +2,51 @@ import mongoose from "mongoose";
 
 const orderItemSchema = new mongoose.Schema(
   {
-    product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-    variantSku: String,
-    name: String,
-    price: Number,
-    qty: Number,
+    product: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Product",
+      required: true,
+    },
+
+    variantSku: {
+      type: String,
+      required: true,
+    },
+
+    name: {
+      type: String,
+      required: true,
+    },
+
+    image: {
+      type: String,
+      required: true,
+    },
+
+    color: {
+      type: String,
+      required: true,
+    },
+
+    size: {
+      type: String,
+      required: true,
+    },
+
+    mrp: {
+      type: Number,
+      required: true,
+    },
+
+    price: {
+      type: Number,
+      required: true,
+    },
+
+    qty: {
+      type: Number,
+      required: true,
+    },
   },
   { _id: false }
 );
@@ -25,6 +65,10 @@ const orderSchema = new mongoose.Schema(
       cgst: { type: Number, default: 0 },
       sgst: { type: Number, default: 0 },
       total: { type: Number, default: 0 },
+    },
+    userEmail: {
+      type: String,
+      required: true,
     },
 
     shippingAddress: {
@@ -75,7 +119,6 @@ const orderSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
-
 
 orderSchema.pre("save", async function (next) {
   if (!this.orderNo) {
