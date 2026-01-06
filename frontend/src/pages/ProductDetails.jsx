@@ -21,6 +21,7 @@ import "swiper/css/pagination";
 import api from "../api/axios";
 import { useCart } from "../context/CartContext";
 import SimilarProducts from "../components/ui/SimilarProducts";
+import SEO from "../SEO/SEO";
 
 const ProductDetails = () => {
   const { slug } = useParams();
@@ -77,6 +78,48 @@ const ProductDetails = () => {
     setQty(1);
   }, [activeSize]);
 
+  useEffect(() => {
+    if (!product) return;
+
+    const productSchema = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      image: product.variants.flatMap((v) => v.images.map((i) => i.url)),
+      description: seoData.description,
+      sku: product.productId,
+      brand: {
+        "@type": "Brand",
+        name: product.brand,
+      },
+      offers: {
+        "@type": "Offer",
+        priceCurrency: "INR",
+        price: activeSize?.price || 0,
+        availability:
+          activeSize?.stock > 0
+            ? "https://schema.org/InStock"
+            : "https://schema.org/OutOfStock",
+      },
+      aggregateRating:
+        product.ratingsCount > 0
+          ? {
+              "@type": "AggregateRating",
+              ratingValue: product.ratingsAverage,
+              reviewCount: product.ratingsCount,
+            }
+          : undefined,
+    };
+
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.innerHTML = JSON.stringify(productSchema);
+    document.head.appendChild(script);
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, [product, activeSize]);
   /* ================= DERIVED ================= */
   const price = activeSize?.price ?? 0;
   const mrp = activeSize?.mrp ?? 0;
@@ -167,9 +210,23 @@ const ProductDetails = () => {
 
   if (!product) return null;
 
+  /* ================= SEO META ================= */
+  const seoData = {
+    title: product.seo?.title || `${product.name} | ${product.brand}`,
+
+    description: product.seo?.description || product.shortDescription,
+
+    keywords: product.seo?.keywords?.length
+      ? product.seo.keywords.join(", ")
+      : product.name,
+
+    image: selectedImg || product.variants[0]?.images[0]?.url,
+  };
+
   /* ================= UI ================= */
   return (
     <section className="bg-white">
+      <SEO {...seoData} />
       {/* BACK */}
       <div className="max-w-7xl mx-auto px-4 py-4">
         <button

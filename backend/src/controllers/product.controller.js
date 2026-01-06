@@ -125,6 +125,18 @@ export const createProduct = async (req, res) => {
       });
     }
 
+    /* ================= SEO AUTO-GENERATION ================= */
+    const seoData = {
+      title: seo?.title?.trim() || `${name} | ${brand || "Elan Cotts"}`,
+
+      description: seo?.description?.trim() || shortDescription?.slice(0, 155),
+
+      keywords:
+        seo?.keywords?.length > 0
+          ? seo.keywords
+          : [name, brand || "Elan Cotts", mainCategory.name, gender],
+    };
+
     /* ================= CREATE PRODUCT ================= */
     const product = await Product.create({
       productId: `PRD-${Date.now()}`,
@@ -144,7 +156,7 @@ export const createProduct = async (req, res) => {
       isNewArrival,
       returnPolicy,
       shipping,
-      seo,
+      seo: seoData,
     });
 
     res.status(201).json({
@@ -161,7 +173,6 @@ export const createProduct = async (req, res) => {
     });
   }
 };
-
 
 /* ================= GET PRODUCTS BY CATEGORY (SMART) ================= */
 export const getProductsByCategory = async (req, res) => {
@@ -228,7 +239,6 @@ export const getProductsByCategory = async (req, res) => {
     });
   }
 };
-
 
 /* ================= GET SINGLE PRODUCT BY SLUG ================= */
 export const getProductBySlug = async (req, res) => {
@@ -397,9 +407,7 @@ export const getSimilarProducts = async (req, res) => {
       subCategory: product.subCategory,
       isActive: true,
     })
-      .select(
-        "name slug brand variants isFeatured isBestSeller isNewArrival"
-      )
+      .select("name slug brand variants isFeatured isBestSeller isNewArrival")
       .limit(8)
       .sort({ createdAt: -1 });
 
@@ -431,7 +439,6 @@ export const getProductByIdAdmin = async (req, res) => {
     res.status(500).json({ success: false });
   }
 };
-
 
 /* ================= UPDATE PRODUCT ================= */
 export const updateProduct = async (req, res) => {
@@ -497,34 +504,33 @@ export const updateProduct = async (req, res) => {
 
     /* ================= VARIANT IMAGES ================= */
     /* ================= SAFE VARIANT UPDATE ================= */
-if (productData.variants) {
-  const updatedVariants = [];
+    if (productData.variants) {
+      const updatedVariants = [];
 
-  for (let i = 0; i < product.variants.length; i++) {
-    const existingVariant = product.variants[i];
-    const incomingVariant = productData.variants[i] || {};
+      for (let i = 0; i < product.variants.length; i++) {
+        const existingVariant = product.variants[i];
+        const incomingVariant = productData.variants[i] || {};
 
-    let images = existingVariant.images;
+        let images = existingVariant.images;
 
-    const imageKey = `variantImages_${i}`;
-    if (req.files?.[imageKey]) {
-      images = await uploadMultipleToCloudinary(
-        req.files[imageKey],
-        "elan-cotts/products/variants"
-      );
+        const imageKey = `variantImages_${i}`;
+        if (req.files?.[imageKey]) {
+          images = await uploadMultipleToCloudinary(
+            req.files[imageKey],
+            "elan-cotts/products/variants"
+          );
+        }
+
+        updatedVariants.push({
+          color: incomingVariant.color ?? existingVariant.color,
+          sizes: incomingVariant.sizes ?? existingVariant.sizes,
+          isActive: incomingVariant.isActive ?? existingVariant.isActive,
+          images,
+        });
+      }
+
+      product.variants = updatedVariants;
     }
-
-    updatedVariants.push({
-      color: incomingVariant.color ?? existingVariant.color,
-      sizes: incomingVariant.sizes ?? existingVariant.sizes,
-      isActive: incomingVariant.isActive ?? existingVariant.isActive,
-      images,
-    });
-  }
-
-  product.variants = updatedVariants;
-}
-
 
     /* ================= SAFE FIELD UPDATE ================= */
     const allowedFields = [
@@ -552,6 +558,19 @@ if (productData.variants) {
         product[field] = productData[field];
       }
     });
+    if (productData.seo) {
+      product.seo.title =
+        productData.seo.title?.trim() || `${product.name} | ${product.brand}`;
+
+      product.seo.description =
+        productData.seo.description?.trim() ||
+        product.shortDescription?.slice(0, 155);
+
+      product.seo.keywords =
+        productData.seo.keywords?.length > 0
+          ? productData.seo.keywords
+          : product.seo.keywords;
+    }
 
     await product.save();
 

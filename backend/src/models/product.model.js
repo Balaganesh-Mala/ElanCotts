@@ -260,9 +260,20 @@ const productSchema = new mongoose.Schema(
     },
 
     seo: {
-      title: String,
-      description: String,
-      keywords: [String],
+      title: {
+        type: String,
+        trim: true,
+        maxlength: 70, // Google best practice
+      },
+      description: {
+        type: String,
+        trim: true,
+        maxlength: 160, // Meta description limit
+      },
+      keywords: {
+        type: [String],
+        default: [],
+      },
     },
   },
   { timestamps: true }
