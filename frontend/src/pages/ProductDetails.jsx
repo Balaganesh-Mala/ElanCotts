@@ -8,6 +8,7 @@ import {
   FaStar,
   FaCheckCircle,
   FaUserCircle,
+  FaShareAlt,
 } from "react-icons/fa";
 import { FiChevronDown } from "react-icons/fi";
 import { useRecentlyViewed } from "../context/RecentlyViewedContext";
@@ -223,6 +224,25 @@ const ProductDetails = () => {
     image: selectedImg || product.variants[0]?.images[0]?.url,
   };
 
+  const handleShare = async () => {
+    const shareUrl = window.location.href;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: product.name,
+          text: product.shortDescription || "Check out this product",
+          url: shareUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(shareUrl);
+        Swal.fire("Link Copied", "Product link copied to clipboard", "success");
+      }
+    } catch (err) {
+      console.error("Share failed:", err);
+    }
+  };
+
   /* ================= UI ================= */
   return (
     <section className="bg-white">
@@ -345,9 +365,22 @@ const ProductDetails = () => {
           {/* TITLE + RATING */}
           <div className="space-y-2">
             {/* PRODUCT NAME */}
-            <h1 className="text-2xl font-semibold text-slate-900 leading-tight">
-              {product.name}
-            </h1>
+            <div className="flex items-start justify-between gap-4">
+              <h1 className="text-2xl font-semibold text-slate-900 leading-tight pr-4">
+                {product.name}
+              </h1>
+
+              {/* SHARE BUTTON */}
+              <button
+                onClick={handleShare}
+                className="p-2 rounded-full border border-slate-300
+    text-slate-600 hover:bg-indigo-50 hover:text-indigo-600
+    transition"
+                title="Share product"
+              >
+                <FaShareAlt size={16} />
+              </button>
+            </div>
 
             {/* SHORT DESCRIPTION */}
             {product.shortDescription && (

@@ -47,8 +47,6 @@ const HelpWidget = () => {
               b.image?.url
           )
           .sort((a, b) => a.order - b.order) || [];
-
-      console.log("HELP WIDGET BANNERS:", banners);
       setCarouselBanners(banners);
     } catch (err) {
       console.error("Failed to load help widget banners", err);

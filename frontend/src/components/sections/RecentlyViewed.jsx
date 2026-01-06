@@ -12,7 +12,7 @@ const RecentlyViewed = () => {
   if (!recentlyViewed || recentlyViewed.length === 0) return null;
 
   return (
-    <section className="max-w-7xl mx-auto px-4 py-10">
+    <section className="max-w-7xl mx-auto px-4 py-10 overflow-hidden">
       {/* ================= HEADER ================= */}
       <div className="flex items-center justify-between mb-5">
         <h2 className="text-lg font-semibold text-slate-900">
@@ -28,24 +28,26 @@ const RecentlyViewed = () => {
         modules={[Autoplay]}
         loop={recentlyViewed.length > 4}
         autoplay={{
-          delay: 0,
+          delay: 2500,               // ✅ smooth, safe autoplay
           disableOnInteraction: false,
         }}
-        speed={6000}                 // controls smoothness
-        slidesPerView="auto"
-        spaceBetween={16}
-        className="!overflow-visible"
+        speed={800}
+        slidesPerView={2}
+        spaceBetween={12}
+        breakpoints={{
+          640: { slidesPerView: 3 },
+          768: { slidesPerView: 4 },
+          1024: { slidesPerView: 5 },
+        }}
+        className="w-full"
       >
-        {[...recentlyViewed, ...recentlyViewed].map((p, index) => {
+        {recentlyViewed.map((p) => {
           const firstVariant = p.variants?.[0];
           const image = firstVariant?.images?.[0]?.url;
           const colorsCount = p.variants?.length || 0;
 
           return (
-            <SwiperSlide
-              key={p._id + index}
-              className="!w-[160px] sm:!w-[180px] lg:!w-[200px]"
-            >
+            <SwiperSlide key={p._id}>
               <button
                 onClick={() => navigate(`/product/${p.slug}`)}
                 className="group text-left w-full"
