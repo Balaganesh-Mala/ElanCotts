@@ -9,6 +9,38 @@ import "swiper/css/navigation";
 
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 
+
+const CategorySkeleton = () => {
+  return (
+    <section className="w-full bg-white py-14 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 animate-pulse">
+        {/* HEADER SKELETON */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="h-7 w-56 bg-slate-200 rounded-md" />
+            <div className="h-4 w-72 bg-slate-200 rounded-md mt-2" />
+          </div>
+
+          <div className="hidden md:flex gap-3">
+            <div className="w-10 h-10 bg-slate-200 rounded-full" />
+            <div className="w-10 h-10 bg-slate-200 rounded-full" />
+          </div>
+        </div>
+
+        {/* CARDS SKELETON */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          {[...Array(4)].map((_, i) => (
+            <div
+              key={i}
+              className="h-[360px] bg-slate-200 rounded-xl"
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+};
+
 const CategorySection = () => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -37,7 +69,12 @@ const CategorySection = () => {
     loadCategories();
   }, []);
 
-  if (loading || !categories.length) return null;
+  if (loading) {
+  return <CategorySkeleton />;
+}
+
+if (!categories.length) return null;
+
 
   return (
     <section className="w-full bg-white py-14 overflow-hidden">

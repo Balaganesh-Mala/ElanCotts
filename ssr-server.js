@@ -13,7 +13,7 @@ const PORT = 5050; // ⚠️ NOT 5000 (your backend uses 5000)
 // Serve static React files
 app.use(
   express.static(path.join(__dirname, "frontend/dist"), {
-    index: false
+    index: false,
   })
 );
 
@@ -22,14 +22,9 @@ app.get("/product/:slug", async (req, res) => {
   const { slug } = req.params;
 
   try {
-    console.log("🔥 SSR slug:", slug);
-
     const apiRes = await fetch(
-  `https://elancotts-backend.onrender.com/api/products/${slug}`
-);
-
-
-    console.log("🔥 API status:", apiRes.status);
+      `https://elancotts-backend.onrender.com/api/products/${slug}`
+    );
 
     if (!apiRes.ok) {
       throw new Error("API returned non-200");
@@ -38,8 +33,6 @@ app.get("/product/:slug", async (req, res) => {
     // ✅ READ JSON ONCE
     const data = await apiRes.json();
     const product = data.product;
-
-    console.log("🔥 PRODUCT NAME:", product.name);
 
     let html = fs.readFileSync(
       path.join(__dirname, "frontend/dist/index.html"),
@@ -71,12 +64,9 @@ app.get("/product/:slug", async (req, res) => {
   }
 });
 
-
 // 🔁 ALL OTHER ROUTES → NORMAL REACT
 app.get("*", (req, res) => {
-  res.sendFile(
-    path.join(__dirname, "frontend/dist/index.html")
-  );
+  res.sendFile(path.join(__dirname, "frontend/dist/index.html"));
 });
 
 app.listen(PORT, () => {

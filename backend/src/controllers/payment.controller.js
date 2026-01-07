@@ -3,6 +3,7 @@ import razorpay from "../config/razorpay.js";
 
 import Cart from "../models/cart.model.js";
 import Payment from "../models/payment.model.js";
+import AbandonedCheckout from "../models/AbandonedCheckout.model.js";
 import { buildOrderFromCart } from "../services/order.service.js";
 
 /* =====================================================
@@ -55,10 +56,19 @@ export const createRazorpayOrder = async (req, res) => {
       status: "CREATED",
     });
 
+    const checkout = await AbandonedCheckout.create({
+      user: req.user._id,
+      phone: req.user.phone,
+      name: req.user.name,
+      cartItems: cart.items,
+      checkoutUrl: "https://elancotts.com/checkout",
+    });
+
     res.status(200).json({
       success: true,
       razorpayOrder,
       paymentId: payment._id,
+      checkoutId: checkout._id,
     });
   } catch (error) {
     console.error("Create Razorpay Order Error:", error);
@@ -109,6 +119,10 @@ export const verifyRazorpayPayment = async (req, res) => {
       .digest("hex");
 
     if (expectedSignature !== razorpay_signature) {
+      await AbandonedCheckout.findByIdAndUpdate(req.body.checkoutId, {
+        status: "PENDING",
+      });
+
       return res.status(400).json({
         success: false,
         message: "Invalid payment signature",

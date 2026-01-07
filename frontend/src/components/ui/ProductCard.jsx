@@ -30,8 +30,8 @@ const ProductCard = ({ product }) => {
   return (
     <Link
       to={`/product/${product.slug}`}
-      className="group block bg-white rounded-xl 
-      border border-slate-200 hover:shadow-lg transition
+      className="group block bg-white  
+       hover:shadow-lg transition
       focus:outline-none focus:ring-2 focus:ring-indigo-500"
     >
       {/* ================= IMAGE ================= */}

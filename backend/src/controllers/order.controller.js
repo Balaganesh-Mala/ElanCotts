@@ -1,4 +1,5 @@
 import Order from "../models/order.model.js";
+import AbandonedCheckout from "../models/AbandonedCheckout.model.js";
 import { buildOrderFromCart } from "../services/order.service.js";
 import { generateInvoicePDF } from "../services/invoice.service.js";
 
@@ -24,7 +25,11 @@ export const createCodOrder = async (req, res) => {
       paymentMethod: "COD",
       couponCode,
     });
-
+    if (req.body.checkoutId) {
+      await AbandonedCheckout.findByIdAndUpdate(req.body.checkoutId, {
+        status: "RECOVERED",
+      });
+    }
     res.status(201).json({
       success: true,
       message: "COD order placed successfully",
@@ -126,12 +131,7 @@ export const updateOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
 
-    const allowedStatuses = [
-      "PLACED",
-      "SHIPPED",
-      "DELIVERED",
-      "CANCELLED",
-    ];
+    const allowedStatuses = ["PLACED", "SHIPPED", "DELIVERED", "CANCELLED"];
 
     if (!allowedStatuses.includes(status)) {
       return res.status(400).json({
@@ -200,7 +200,6 @@ export const deleteOrder = async (req, res) => {
   }
 };
 
-
 export const downloadInvoice = async (req, res) => {
   const order = await Order.findOne({
     _id: req.params.id,
@@ -217,8 +216,6 @@ export const downloadInvoice = async (req, res) => {
 
   generateInvoicePDF(order, res);
 };
-
-
 
 export const previewOrder = async (req, res) => {
   try {

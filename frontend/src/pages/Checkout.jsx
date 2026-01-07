@@ -31,6 +31,7 @@ const Checkout = () => {
 
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
+  const [checkoutId, setCheckoutId] = useState(null);
 
   const [summary, setSummary] = useState({
     itemsPrice: 0,
@@ -77,6 +78,30 @@ const Checkout = () => {
 
     loadCheckout();
   }, [navigate, token]);
+
+  useEffect(() => {
+    if (!address.phone || !items.length || checkoutId) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await api.post(
+          "/checkout/start",
+          {
+            phone: address.phone,
+            name: address.name || "Guest",
+            cartItems: items,
+          },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+
+        setCheckoutId(res.data.checkoutId);
+      } catch (err) {
+        console.error("Checkout start failed");
+      }
+    }, 3000); // ⏱ wait 3 seconds (user intent)
+
+    return () => clearTimeout(timer);
+  }, [address.phone, items]);
 
   /* ================= COUPON (UI ONLY) ================= */
   const applyCoupon = async () => {
@@ -147,6 +172,7 @@ const Checkout = () => {
         {
           shippingAddress: address,
           couponCode: couponApplied ? couponCode : null,
+          checkoutId,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -229,6 +255,7 @@ const Checkout = () => {
                 razorpay_signature: response.razorpay_signature,
                 shippingAddress: address,
                 couponCode: couponApplied ? couponCode : null,
+                checkoutId,
               },
               { headers: { Authorization: `Bearer ${token}` } }
             );
@@ -279,9 +306,8 @@ const Checkout = () => {
 
   /* ================= UI ================= */
   if (loading) {
-  return <CheckoutSkeleton />;
-}
-
+    return <CheckoutSkeleton />;
+  }
 
   /* ================= ORDER CALCULATIONS ================= */
   const mrpTotal = items.reduce((sum, item) => sum + item.mrp * item.qty, 0);
@@ -604,16 +630,15 @@ const Checkout = () => {
 
             {/* DIVIDER */}
             <div className="border-t border-dashed border-slate-600" />
-            <div className="flex justify-between"> 
-            <span className="text-sm font-semibold text-slate-700">
-              Total Amount
-            </span>
-            <span className="text-2xl font-bold text-gray-900">
-              ₹{formatPrice(preview?.totalPrice ?? estimatedTotal)}
-            </span>
+            <div className="flex justify-between">
+              <span className="text-sm font-semibold text-slate-700">
+                Total Amount
+              </span>
+              <span className="text-2xl font-bold text-gray-900">
+                ₹{formatPrice(preview?.totalPrice ?? estimatedTotal)}
+              </span>
             </div>
             {/* TOTAL */}
-            
 
             {/* COUPON */}
             <div className="space-y-2">
